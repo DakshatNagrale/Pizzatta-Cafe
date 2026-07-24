@@ -15,6 +15,7 @@ let selectedDate = getTodayIST();
 let newOrderItems = [];
 let editOrderItems = [];
 let hourlyChart, revenueChart, categoryChart;
+let activeDrillDate = null;
 
 // ---- INIT ----
 window.addEventListener('DOMContentLoaded', async () => {
@@ -23,6 +24,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   setDateLabels();
   initSparkCanvas();
   navigate('dashboard');
+  startLiveSync();
 });
 
 function setDateLabels() {
@@ -1021,6 +1023,7 @@ function renderAnalytics() {
 // DAY DRILL-DOWN
 // =============================================
 function openDayDrillDown(date) {
+  activeDrillDate = date;
   const dayOrders = orders.filter(o => o.date === date);
   const panel = document.getElementById('dayDrillDown');
   const dt = new Date(date + 'T00:00:00');
@@ -1184,6 +1187,7 @@ function buildCompactDrillTable(list) {
 }
 
 function closeDrillDown() {
+  activeDrillDate = null;
   const panel = document.getElementById('dayDrillDown');
   panel.classList.remove('drill-visible');
   setTimeout(() => { panel.style.display = 'none'; }, 350);
@@ -1251,4 +1255,63 @@ function initSparkCanvas() {
     requestAnimationFrame(animate);
   }
   animate();
+}
+
+let syncInterval = null;
+let lastSyncString = '';
+
+function startLiveSync() {
+  if (syncInterval) clearInterval(syncInterval);
+  
+  setTimeout(() => {
+    lastSyncString = JSON.stringify({
+      orders: orders,
+      menuItems: menuItems,
+      nextOrderId: nextOrderId,
+      nextMenuId: nextMenuId
+    });
+  }, 1000);
+
+  syncInterval = setInterval(async () => {
+    const isNewModalOpen = document.getElementById('newOrderModal').classList.contains('open');
+    const isEditModalOpen = document.getElementById('editOrderModal').classList.contains('open');
+    const isMenuModalOpen = document.getElementById('menuModal').classList.contains('open');
+    if (isNewModalOpen || isEditModalOpen || isMenuModalOpen) return;
+
+    try {
+      const res = await fetch('/api/data?t=' + Date.now());
+      if (res.ok) {
+        const data = await res.json();
+        const currentString = JSON.stringify({
+          orders: data.orders,
+          menuItems: data.menuItems,
+          nextOrderId: data.nextOrderId,
+          nextMenuId: data.nextMenuId
+        });
+        
+        if (currentString !== lastSyncString) {
+          lastSyncString = currentString;
+          
+          if (data.menuItems && Array.isArray(data.menuItems)) menuItems = data.menuItems;
+          if (data.orders && Array.isArray(data.orders)) orders = data.orders;
+          if (data.nextOrderId) nextOrderId = parseInt(data.nextOrderId);
+          if (data.nextMenuId) nextMenuId = parseInt(data.nextMenuId);
+          
+          if (currentPage === 'dashboard') renderDashboard();
+          if (currentPage === 'orders') renderOrders();
+          if (currentPage === 'menu') renderMenu();
+          if (currentPage === 'analytics') renderAnalytics();
+          
+          if (activeDrillDate) {
+            const panel = document.getElementById('dayDrillDown');
+            if (panel && panel.classList.contains('drill-visible')) {
+              openDayDrillDown(activeDrillDate);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Live sync failed:", err);
+    }
+  }, 4000);
 }
