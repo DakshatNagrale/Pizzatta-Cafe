@@ -480,6 +480,160 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   }
 }
 
+@media (max-width: 768px) {
+  /* Turn the table into a card layout */
+  .table-card {
+    border: none;
+    background: transparent;
+  }
+  .table-card table, 
+  .table-card tbody, 
+  .table-card tr, 
+  .table-card td {
+    display: block;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+  .table-card thead {
+    display: none;
+  }
+  .table-card tbody tr {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+  .table-card tbody tr:hover {
+    background: var(--surface3);
+    border-color: rgba(255, 107, 43, 0.2);
+    transform: none; /* disable 3D rotation on mobile for better scrolling */
+  }
+  
+  /* Style individual table cells as sections inside the card */
+  .table-card td {
+    padding: 6px 0;
+    border-bottom: none;
+    font-size: 13.5px;
+  }
+  
+  /* Row 1: Order # */
+  .table-card td:nth-child(1) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    font-size: 15px;
+  }
+  
+  /* Customer and Note */
+  .table-card td:nth-child(2) {
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .table-card td:nth-child(2) .note {
+    font-weight: normal;
+  }
+  
+  /* Order Type Badge */
+  .table-card td:nth-child(3) {
+    display: inline-block;
+    width: auto !important;
+    margin-bottom: 8px;
+  }
+  
+  /* Items list */
+  .table-card td:nth-child(4) {
+    color: var(--text-muted);
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    margin: 8px 0;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    word-break: break-all;
+    white-space: normal !important;
+  }
+  
+  /* Total Amount */
+  .table-card td:nth-child(5) {
+    display: inline-block;
+    width: auto !important;
+    font-size: 16px;
+    color: var(--primary);
+  }
+  
+  /* Order Time */
+  .table-card td:nth-child(6) {
+    display: inline-block;
+    width: auto !important;
+    float: right;
+    color: var(--text-dim);
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  
+  /* Clear floats */
+  .table-card tbody tr::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+  
+  /* Toggles (Payment & Delivery) */
+  .table-card td:nth-child(7),
+  .table-card td:nth-child(8) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    padding-top: 10px;
+  }
+  
+  /* Add label prefix to toggles on mobile */
+  .table-card td:nth-child(7)::before {
+    content: "Payment Status:";
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .table-card td:nth-child(8)::before {
+    content: "Delivery Status:";
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  
+  /* Actions column */
+  .table-card td:nth-child(9) {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    padding-top: 10px;
+  }
+  
+  .table-card td:nth-child(9) .icon-btn {
+    padding: 8px 16px;
+    background: var(--surface3);
+    border-radius: 8px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+  }
+  .table-card td:nth-child(9) .icon-btn.danger {
+    background: rgba(239, 68, 68, 0.08);
+  }
+}
+
 /* ---- AUTOSAVE INDICATOR ---- */
 @keyframes pulse {
   0% { opacity: 1; }
