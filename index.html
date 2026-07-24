@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PizzaCafe Staff Portal</title>
+  <meta name="description" content="Premium pizza cafe staff management system for billing, orders, menu management and sales analytics." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <canvas id="spark-canvas" style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;opacity:0.4;"></canvas>
+  <div class="app-wrapper">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">🍕</div>
+        <div class="brand-text">
+          <span class="brand-name">PizzaCafe</span>
+          <span class="brand-sub">Staff Portal</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" data-page="orders" onclick="navigate('orders')">
+          <span class="nav-icon">🧾</span>
+          <span class="nav-label">Daily Orders</span>
+        </a>
+        <a href="#" class="nav-item" data-page="menu" onclick="navigate('menu')">
+          <span class="nav-icon">🍽️</span>
+          <span class="nav-label">Menu Manager</span>
+        </a>
+        <a href="#" class="nav-item" data-page="analytics" onclick="navigate('analytics')">
+          <span class="nav-icon">📈</span>
+          <span class="nav-label">Sales Analytics</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="staff-avatar">S</div>
+        <div class="staff-info">
+          <span class="staff-name">Staff Login</span>
+          <span class="staff-role">Manager</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- TOP BAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+          <div>
+            <h1 class="page-title" id="pageTitle">Dashboard</h1>
+            <p class="page-date" id="pageDate"></p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="notification-bell">🔔</div>
+          <div class="today-badge" id="todayBadge"></div>
+        </div>
+      </header>
+
+      <!-- PAGES -->
+      <div class="page-container">
+        <!-- DASHBOARD PAGE -->
+        <div id="page-dashboard" class="page active">
+          <div class="kpi-grid" id="kpiGrid"></div>
+          <div class="chart-row">
+            <div class="chart-card wide">
+              <div class="card-header">
+                <h3>Today's Hourly Sales</h3>
+                <span class="card-badge">Live</span>
+              </div>
+              <canvas id="hourlyChart" height="200"></canvas>
+            </div>
+          </div>
+          <div class="section-header">
+            <h3>Recent Orders</h3>
+            <a href="#" class="view-all" onclick="navigate('orders')">View All →</a>
+          </div>
+          <div class="table-card" id="recentOrdersTable"></div>
+        </div>
+
+        <!-- ORDERS PAGE -->
+        <div id="page-orders" class="page">
+          <div class="orders-topbar">
+            <div class="filter-tabs" id="orderFilterTabs">
+              <button class="filter-tab active" onclick="filterOrders('all', this)">All Orders</button>
+              <button class="filter-tab" onclick="filterOrders('paid', this)">Paid</button>
+              <button class="filter-tab" onclick="filterOrders('unpaid', this)">Unpaid</button>
+              <button class="filter-tab" onclick="filterOrders('delivered', this)">Delivered</button>
+              <button class="filter-tab" onclick="filterOrders('pending', this)">Pending</button>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <input type="date" id="orderDateFilter" class="form-input" style="height:36px;width:140px;cursor:pointer;" onchange="changeOrderDate(this.value)">
+              <button class="btn-ghost" onclick="downloadOrdersText()">⬇️ Download TXT</button>
+              <input type="file" id="importTxtInput" accept=".txt" style="display:none" onchange="importOrdersFromText(event)">
+              <button class="btn-ghost" onclick="document.getElementById('importTxtInput').click()">⬆️ Import TXT</button>
+              <button class="btn-primary" onclick="openNewOrderModal()">+ New Order</button>
+            </div>
+          </div>
+          <div class="orders-stats" id="ordersStats"></div>
+          <div class="table-card" id="ordersTable"></div>
+        </div>
+
+        <!-- MENU MANAGER PAGE -->
+        <div id="page-menu" class="page">
+          <div class="orders-topbar">
+            <div class="filter-tabs" id="menuFilterTabs">
+              <button class="filter-tab active" onclick="filterMenu('all', this)">All</button>
+              <button class="filter-tab" onclick="filterMenu('special', this)">🍕 Special</button>
+              <button class="filter-tab" onclick="filterMenu('pizza', this)">🍕 Classic</button>
+              <button class="filter-tab" onclick="filterMenu('combo', this)">🍱 Combos</button>
+              <button class="filter-tab" onclick="filterMenu('momo', this)">🥟 Momos</button>
+              <button class="filter-tab" onclick="filterMenu('sandwich', this)">🥪 Sandwiches</button>
+              <button class="filter-tab" onclick="filterMenu('side', this)">🍟 Sides</button>
+              <button class="filter-tab" onclick="filterMenu('drink', this)">🥤 Drinks</button>
+              <button class="filter-tab" onclick="filterMenu('dessert', this)">🍰 Desserts</button>
+              <button class="filter-tab" onclick="filterMenu('extra', this)">🧀 Extras</button>
+            </div>
+            <button class="btn-primary" onclick="openMenuModal()">+ Add New Item</button>
+          </div>
+          <div class="menu-grid" id="menuGrid"></div>
+        </div>
+
+        <!-- ANALYTICS PAGE -->
+        <div id="page-analytics" class="page">
+          <div class="analytics-period-tabs">
+            <button class="filter-tab active" onclick="setAnalyticsPeriod('week', this)">This Week</button>
+            <button class="filter-tab" onclick="setAnalyticsPeriod('month', this)">This Month</button>
+            <button class="filter-tab" onclick="setAnalyticsPeriod('all', this)">All Time</button>
+          </div>
+          <div class="kpi-grid" id="analyticsKpiGrid"></div>
+          <div class="chart-row">
+            <div class="chart-card wide60">
+              <div class="card-header">
+                <h3>Daily Revenue</h3>
+                <span class="card-badge" style="background:rgba(255,107,43,0.15);color:#ff6b2b">Click a bar for details</span>
+              </div>
+              <canvas id="revenueBarChart" height="220"></canvas>
+            </div>
+            <div class="chart-card wide40">
+              <div class="card-header">
+                <h3>Sales by Category</h3>
+              </div>
+              <canvas id="categoryDonut" height="220"></canvas>
+            </div>
+          </div>
+          <div class="chart-row">
+            <div class="chart-card wide60">
+              <div class="card-header"><h3>Top Selling Items</h3></div>
+              <div id="topItemsTable"></div>
+            </div>
+            <div class="chart-card wide40">
+              <div class="card-header"><h3>Payment Summary</h3></div>
+              <div id="paymentSummary"></div>
+            </div>
+          </div>
+
+          <!-- DAY DRILL-DOWN PANEL -->
+          <div id="dayDrillDown" class="drill-down-panel" style="display:none">
+            <div class="drill-header">
+              <div>
+                <h3 id="drillTitle">📅 Day Details</h3>
+                <p id="drillSubtitle" style="color:var(--text-muted);font-size:13px;margin-top:2px"></p>
+              </div>
+              <button onclick="closeDrillDown()" class="drill-close">✕ Close</button>
+            </div>
+            <div class="kpi-grid" id="drillKpiGrid"></div>
+            <div class="chart-row">
+              <div class="chart-card wide60">
+                <div class="card-header"><h3>⏰ Hourly Sales</h3></div>
+                <canvas id="drillHourlyChart" height="200"></canvas>
+              </div>
+              <div class="chart-card wide40">
+                <div class="card-header"><h3>🛵 Order Type Split</h3></div>
+                <canvas id="drillTypeChart" height="200"></canvas>
+              </div>
+            </div>
+            <div class="chart-row">
+              <div class="chart-card wide60">
+                <div class="card-header"><h3>💳 Payment Breakdown</h3></div>
+                <div id="drillPaymentDetail"></div>
+              </div>
+              <div class="chart-card wide40">
+                <div class="card-header"><h3>🍕 Top Items This Day</h3></div>
+                <div id="drillTopItems"></div>
+              </div>
+            </div>
+            <div class="chart-card" style="margin-top:0">
+              <div class="card-header">
+                <h3>📋 All Orders This Day</h3>
+                <span id="drillOrderCount" class="card-badge"></span>
+              </div>
+              <div id="drillOrdersTable"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- NEW ORDER MODAL -->
+  <div class="modal-overlay" id="newOrderModal" onclick="closeModal('newOrderModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>🧾 New Order</h3>
+        <button class="modal-close" onclick="closeModal('newOrderModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Customer Name</label>
+          <input type="text" id="customerName" class="form-input" placeholder="Enter customer name..." />
+        </div>
+        <div class="form-group">
+          <label>Search Menu Items</label>
+          <input type="text" id="menuSearch" class="form-input" placeholder="Search pizza, sides, drinks..." oninput="searchMenu(this.value)" />
+          <div class="menu-dropdown" id="menuDropdown"></div>
+        </div>
+        <div class="selected-items" id="selectedItems">
+          <p class="empty-label">No items added yet</p>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="margin-top:10px;">
+            <label>Order Type</label>
+            <select id="orderType" class="form-input">
+              <option value="dine-in">🍽️ Dine-in</option>
+              <option value="online">🛵 Online / Delivery</option>
+              <option value="takeaway">🛍️ Takeaway</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+          <label>Order Note (Optional)</label>
+          <input type="text" id="orderNote" class="form-input" placeholder="e.g. Extra spicy, No onion..." />
+        </div>
+        <div class="order-total-row">
+          <span>Order Total</span>
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="font-size:18px;font-weight:700">₹</span>
+            <input type="number" id="orderTotalInput" class="form-input" style="width:100px;font-size:18px;font-weight:700;text-align:right;height:38px" value="0" oninput="updatePayBalance('new')" />
+          </div>
+        </div>
+        <div class="split-payment-row">
+          <div class="split-field">
+            <label>💵 Cash (₹)</label>
+            <input type="number" id="orderCashAmount" class="form-input" min="0" value="0" placeholder="0" oninput="updatePayBalance('new')" />
+          </div>
+          <div class="split-field">
+            <label>📱 Online / UPI (₹)</label>
+            <input type="number" id="orderOnlineAmount" class="form-input" min="0" value="0" placeholder="0" oninput="updatePayBalance('new')" />
+          </div>
+        </div>
+        <div id="payBalanceNew" class="pay-balance"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal('newOrderModal')">Cancel</button>
+        <button class="btn-primary" onclick="saveNewOrder()">Save Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENU ITEM MODAL -->
+  <div class="modal-overlay" id="menuModal" onclick="closeModal('menuModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="menuModalTitle">Add Menu Item</h3>
+        <button class="modal-close" onclick="closeModal('menuModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editMenuId" />
+        <div class="form-group">
+          <label>Item Name</label>
+          <input type="text" id="menuItemName" class="form-input" placeholder="e.g. Margherita Pizza" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="menuItemCategory" class="form-input">
+              <option value="special">🍕 Special Pizza</option>
+              <option value="pizza">🍕 Classic Pizza</option>
+              <option value="combo">🍱 Combo</option>
+              <option value="momo">🥟 Momos</option>
+              <option value="sandwich">🥪 Sandwich</option>
+              <option value="side">🍟 Side</option>
+              <option value="drink">🥤 Drink</option>
+              <option value="dessert">🍰 Dessert</option>
+              <option value="extra">🧀 Extra</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Price (₹)</label>
+            <input type="number" id="menuItemPrice" class="form-input" placeholder="280" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="menuItemDesc" class="form-input" rows="3" placeholder="Brief description..."></textarea>
+        </div>
+        <div class="form-group toggle-row">
+          <label>Available</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="menuItemAvail" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal('menuModal')">Cancel</button>
+        <button class="btn-primary" onclick="saveMenuItem()">Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT ORDER MODAL -->
+  <div class="modal-overlay" id="editOrderModal" onclick="closeModal('editOrderModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>✏️ Edit Order</h3>
+        <button class="modal-close" onclick="closeModal('editOrderModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editOrderId" />
+        <div class="form-group">
+          <label>Customer Name</label>
+          <input type="text" id="editCustomerName" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>Add More Items</label>
+          <input type="text" id="editMenuSearch" class="form-input" placeholder="Search to add items..." oninput="searchEditMenu(this.value)" />
+          <div class="menu-dropdown" id="editMenuDropdown"></div>
+        </div>
+        <div class="selected-items" id="editSelectedItems"></div>
+        <div class="form-row">
+          <div class="form-group" style="margin-top:10px;">
+            <label>Order Type</label>
+            <select id="editOrderType" class="form-input">
+              <option value="dine-in">🍽️ Dine-in</option>
+              <option value="online">🛵 Online / Delivery</option>
+              <option value="takeaway">🛍️ Takeaway</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+          <label>Order Note (Optional)</label>
+          <input type="text" id="editOrderNote" class="form-input" placeholder="e.g. Extra spicy, No onion..." />
+        </div>
+        <div class="order-total-row">
+          <span>Order Total</span>
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="font-size:18px;font-weight:700">₹</span>
+            <input type="number" id="editOrderTotalInput" class="form-input" style="width:100px;font-size:18px;font-weight:700;text-align:right;height:38px" value="0" oninput="updatePayBalance('edit')" />
+          </div>
+        </div>
+        <div class="split-payment-row">
+          <div class="split-field">
+            <label>💵 Cash (₹)</label>
+            <input type="number" id="editCashAmount" class="form-input" min="0" value="0" placeholder="0" oninput="updatePayBalance('edit')" />
+          </div>
+          <div class="split-field">
+            <label>📱 Online / UPI (₹)</label>
+            <input type="number" id="editOnlineAmount" class="form-input" min="0" value="0" placeholder="0" oninput="updatePayBalance('edit')" />
+          </div>
+        </div>
+        <div id="payBalanceEdit" class="pay-balance"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal('editOrderModal')">Cancel</button>
+        <button class="btn-primary" onclick="updateOrder()">Update Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast"></div>
+
+  <!-- AUTOSAVE INDICATOR -->
+  <div id="saveIndicator" class="save-indicator">✓ Saved to database</div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
