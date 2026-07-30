@@ -25,6 +25,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   initSparkCanvas();
   navigate('dashboard');
   startLiveSync();
+  // New features bootstrap
+  startLiveClock();
+  loadNotes();
+  initKeyboardShortcuts();
+  // Restore saved theme accent
+  const savedTheme = localStorage.getItem('pizzaCafeTheme') || 'cyan';
+  setThemeAccent(savedTheme);
+  setTimeout(() => {
+    updateTicker();
+    setInterval(updateTicker, 15000);
+  }, 2000);
 });
 
 function setDateLabels() {
@@ -40,20 +51,42 @@ function navigate(page) {
   currentPage = page;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  document.querySelector(`[data-page="${page}"]`).classList.add('active');
-  const titles = { dashboard:'Dashboard', orders:'Daily Orders Sheet', menu:'Menu Manager', analytics:'Sales Analytics' };
-  document.getElementById('pageTitle').textContent = titles[page];
+  const pageEl = document.getElementById('page-' + page);
+  if (!pageEl) return;
+  pageEl.classList.add('active');
+  const navEl = document.querySelector(`[data-page="${page}"]`);
+  if (navEl) navEl.classList.add('active');
+  const titles = {
+    dashboard: 'Command Deck',
+    orders: 'Daily Orders Sheet',
+    kds: '🔥 Kitchen Display System',
+    menu: 'Menu Manager',
+    analytics: 'Sales Analytics'
+  };
+  document.getElementById('pageTitle').textContent = titles[page] || page;
   if (page === 'dashboard')  renderDashboard();
   if (page === 'orders')     renderOrders();
+  if (page === 'kds')        renderKds('all');
   if (page === 'menu')       renderMenu();
   if (page === 'analytics')  renderAnalytics();
-  // close sidebar on mobile
-  document.getElementById('sidebar').classList.remove('open');
+  // Update mobile bottom nav items
+  document.querySelectorAll('.mb-nav-item').forEach(m => m.classList.remove('active'));
+  const mbNavEl = document.querySelector(`[data-mobile-page="${page}"]`);
+  if (mbNavEl) mbNavEl.classList.add('active');
+
+  // close sidebar & overlay on mobile
+  const sb = document.getElementById('sidebar');
+  const sbo = document.getElementById('sidebarOverlay');
+  if (sb) sb.classList.remove('open');
+  if (sbo) sbo.classList.remove('open');
 }
 
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
+  const sb = document.getElementById('sidebar');
+  const sbo = document.getElementById('sidebarOverlay');
+  if (sb) sb.classList.toggle('open');
+  if (sbo) sbo.classList.toggle('open');
+  cyberClick();
 }
 
 // ---- TOAST ----
@@ -78,18 +111,18 @@ function renderDashboard() {
   const pendingDel = dOrders.filter(o=>!o.delivered).length;
 
   document.getElementById('kpiGrid').innerHTML = `
-    <div class="kpi-card"><div class="kpi-label">Today's Revenue</div>
+    <div class="kpi-card"><div class="kpi-label">QUANTUM REVENUE</div>
       <div class="kpi-value" id="kpiRevenue">₹${totalRev.toLocaleString('en-IN')}</div>
-      <div class="kpi-trend trend-up">▲ Live</div><div class="kpi-icon">💰</div></div>
-    <div class="kpi-card success"><div class="kpi-label">Total Orders</div>
+      <div class="kpi-trend trend-up">▲ LIVE STREAM</div><div class="kpi-icon">⚡</div></div>
+    <div class="kpi-card success"><div class="kpi-label">SECTOR ORDERS</div>
       <div class="kpi-value" id="kpiOrders">${dOrders.length}</div>
-      <div class="kpi-trend trend-up">▲ Today</div><div class="kpi-icon">🧾</div></div>
-    <div class="kpi-card warning"><div class="kpi-label">Pending Delivery</div>
+      <div class="kpi-trend trend-up">▲ ACTIVE CYCLE</div><div class="kpi-icon">🛸</div></div>
+    <div class="kpi-card warning"><div class="kpi-label">ORBITAL PENDING</div>
       <div class="kpi-value" id="kpiPending">${pendingDel}</div>
-      <div class="kpi-trend" style="color:var(--warning)">⚠ Pending</div><div class="kpi-icon">🛵</div></div>
-    <div class="kpi-card danger"><div class="kpi-label">Unpaid Amount</div>
+      <div class="kpi-trend" style="color:var(--warning)">⚠ IN TRANSIT</div><div class="kpi-icon">🛰️</div></div>
+    <div class="kpi-card danger"><div class="kpi-label">UNRESOLVED CREDITS</div>
       <div class="kpi-value" id="kpiUnpaid">₹${(totalRev - totalPaid).toLocaleString('en-IN')}</div>
-      <div class="kpi-trend trend-down">▼ Unpaid</div><div class="kpi-icon">💳</div></div>`;
+      <div class="kpi-trend trend-down">▼ UNPAID</div><div class="kpi-icon">⚛️</div></div>`;
 
   // Hourly chart
   if (hourlyChart) hourlyChart.destroy();
@@ -113,19 +146,56 @@ function renderDashboard() {
   });
   const ctx = document.getElementById('hourlyChart').getContext('2d');
   const grad = ctx.createLinearGradient(0,0,0,200);
-  grad.addColorStop(0,'rgba(255,107,43,0.4)'); grad.addColorStop(1,'rgba(255,107,43,0)');
+  grad.addColorStop(0,'rgba(0, 243, 255, 0.45)'); grad.addColorStop(1,'rgba(0, 243, 255, 0.01)');
   hourlyChart = new Chart(ctx, {
-    type:'line', data:{ labels, datasets:[{ data, borderColor:'#ff6b2b', backgroundColor:grad,
-      fill:true, tension:0.4, pointBackgroundColor:'#ff6b2b', pointRadius:3, borderWidth:2 }]},
+    type:'line', data:{ labels, datasets:[{ data, borderColor:'#00F3FF', backgroundColor:grad,
+      fill:true, tension:0.4, pointBackgroundColor:'#00F3FF', pointBorderColor:'#FF007F', pointRadius:4, borderWidth:2 }]},
     options:{ plugins:{legend:{display:false}}, scales:{
-      x:{ grid:{color:'#1e1e1e'}, ticks:{color:'#666'} },
-      y:{ grid:{color:'#1e1e1e'}, ticks:{color:'#666', callback:v=>'₹'+v} }
+      x:{ grid:{color:'rgba(0,243,255,0.1)'}, ticks:{color:'#7DAEC3', font:{family:'Share Tech Mono'}} },
+      y:{ grid:{color:'rgba(0,243,255,0.1)'}, ticks:{color:'#7DAEC3', font:{family:'Share Tech Mono'}, callback:v=>'₹'+v} }
     }}
   });
 
   // Recent orders table (last 5)
   const recent = [...dOrders].reverse().slice(0, 5);
   document.getElementById('recentOrdersTable').innerHTML = buildOrderTable(recent, true);
+
+  // Update target progress arc
+  renderTargetArc(totalRev);
+  // Update mini leaderboard
+  setTimeout(renderMiniLeaderboard, 100);
+  // Refresh ticker
+  setTimeout(updateTicker, 500);
+}
+
+// ---- TARGET ARC RENDERER ----
+function renderTargetArc(totalRev) {
+  const targetEl = document.getElementById('targetArcWidget');
+  if (!targetEl) return;
+  const target = parseInt(localStorage.getItem('pizzaCafeTarget') || '5000');
+  const pct = Math.min(100, Math.round((totalRev / target) * 100));
+  const r = 52, cx = 64, cy = 64;
+  const circumference = 2 * Math.PI * r;
+  const dash = (pct / 100) * circumference;
+  const color = pct >= 100 ? '#00FF66' : pct >= 60 ? '#00F3FF' : pct >= 30 ? '#FFB700' : '#FF007F';
+  targetEl.innerHTML = `
+    <div class="target-arc-inner">
+      <svg width="128" height="128" viewBox="0 0 128 128">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="10"
+          stroke-dasharray="${dash} ${circumference}" stroke-linecap="round"
+          transform="rotate(-90 ${cx} ${cy})"
+          style="filter:drop-shadow(0 0 8px ${color});transition:stroke-dasharray 1s ease"/>
+        <text x="${cx}" y="${cy - 6}" text-anchor="middle" fill="${color}" font-size="20" font-family="Share Tech Mono" font-weight="700">${pct}%</text>
+        <text x="${cx}" y="${cy + 14}" text-anchor="middle" fill="#7DAEC3" font-size="9" font-family="Share Tech Mono">TARGET</text>
+      </svg>
+      <div class="target-arc-stats">
+        <div class="target-stat-row"><span class="target-stat-label">TODAY</span><span class="target-stat-val" style="color:${color}">₹${totalRev.toLocaleString('en-IN')}</span></div>
+        <div class="target-stat-row"><span class="target-stat-label">GOAL</span><span class="target-stat-val">₹${target.toLocaleString('en-IN')}</span></div>
+        <div class="target-stat-row"><span class="target-stat-label">LEFT</span><span class="target-stat-val" style="color:var(--warning)">₹${Math.max(0,target-totalRev).toLocaleString('en-IN')}</span></div>
+        <button class="preset-btn" style="margin-top:8px;width:100%" onclick="openModal('targetModal');loadTargetInput()">🎯 SET TARGET</button>
+      </div>
+    </div>`;
 }
 
 // =============================================
@@ -140,13 +210,15 @@ function renderOrders() {
 
   const total   = list.length;
   const revenue = list.reduce((s,o) => s + o.total, 0);
-  const onlineRev = list.filter(o => o.type === 'online').reduce((s,o) => s + o.total, 0);
+  const cashRevOrders = list.reduce((s,o) => s + (o.cashAmount || 0), 0);
+  const onlineRevOrders = list.reduce((s,o) => s + (o.onlineAmount || 0), 0);
   const paidN   = list.filter(o => o.paid).length;
   const pendN   = list.filter(o => !o.delivered).length;
   document.getElementById('ordersStats').innerHTML = `
     <div class="orders-stat">Total: <strong>${total}</strong></div>
     <div class="orders-stat">Revenue: <strong>₹${revenue.toLocaleString('en-IN')}</strong></div>
-    <div class="orders-stat">Online Rev: <strong style="color:var(--primary)">₹${onlineRev.toLocaleString('en-IN')}</strong></div>
+    <div class="orders-stat">💵 Cash: <strong style="color:var(--success)">₹${cashRevOrders.toLocaleString('en-IN')}</strong></div>
+    <div class="orders-stat">📱 Online: <strong style="color:var(--primary)">₹${onlineRevOrders.toLocaleString('en-IN')}</strong></div>
     <div class="orders-stat">Paid: <strong style="color:var(--success)">${paidN}</strong></div>
     <div class="orders-stat">Pending: <strong style="color:var(--warning)">${pendN}</strong></div>`;
   document.getElementById('ordersTable').innerHTML = buildOrderTable(list, false);
@@ -172,12 +244,20 @@ function buildOrderTable(list, compact) {
   const rows = list.map(o => {
     const pModeIcon = o.payMode === 'online' ? '📱' : '💵';
     const pModeText = o.payMode === 'online' ? 'Online' : 'Cash';
-    
+    const discBadge = o.discount ? `<span class="badge" style="background:rgba(255,0,127,0.15);color:var(--secondary);margin-left:4px;" title="${o.discount.label}">🏷️ ${o.discount.label}</span>` : '';
+    const kitchBadge = o.ready
+      ? `<span class="badge" style="background:rgba(0,255,102,0.15);color:var(--success);border:1px solid rgba(0,255,102,0.3)" title="Kitchen Ready">🍳 Ready</span>`
+      : `<span class="badge" style="background:rgba(255,183,0,0.15);color:var(--warning);border:1px solid rgba(255,183,0,0.3)" title="In Kitchen Prep">⏳ Prep</span>`;
+
     if (compact) {
+      chkCol = '';
+      kitchCol = `<td>${kitchBadge}</td>`;
       payCol = `<td>${o.paid ? `<span class="badge badge-success">✓ Paid ${pModeIcon}</span>` : '<span class="badge badge-danger">✗ Unpaid</span>'}</td>`;
       delCol = `<td>${o.delivered ? '<span class="badge badge-success">✓ Delivered</span>' : '<span class="badge badge-warning">⏳ Pending</span>'}</td>`;
       actionCol = '';
     } else {
+      chkCol = `<td><input type="checkbox" class="order-batch-chk" value="${o.id}" onchange="updateBatchBar()" onclick="event.stopPropagation()"></td>`;
+      kitchCol = `<td>${kitchBadge}</td>`;
       payCol = `<td>
         <label class="toggle-switch" title="Toggle Payment" onclick="event.stopPropagation()">
           <input type="checkbox" ${o.paid?'checked':''} onchange="toggleField('${o.id}','paid')"><span class="toggle-slider"></span>
@@ -185,13 +265,20 @@ function buildOrderTable(list, compact) {
         <span style="display:block;font-size:11px;color:var(--text-muted);margin-top:4px">${pModeIcon} ${pModeText}</span>
       </td>`;
       delCol = `<td><label class="toggle-switch" title="Toggle Delivery" onclick="event.stopPropagation()"><input type="checkbox" ${o.delivered?'checked':''} onchange="toggleField('${o.id}','delivered')"><span class="toggle-slider"></span></label></td>`;
-      actionCol = `<td><button class="icon-btn" title="Download Bill" onclick="downloadBill('${o.id}')">🧾</button><button class="icon-btn" title="Edit" onclick="openEditOrder('${o.id}')">✏️</button><button class="icon-btn danger" title="Delete" onclick="deleteOrder('${o.id}')">🗑️</button></td>`;
+      actionCol = `<td>
+        <button class="icon-btn" title="Thermal Receipt Preview" onclick="openThermalReceipt('${o.id}')">🧾</button>
+        <button class="icon-btn" title="Apply Discount" onclick="openDiscountModal('${o.id}')">🏷️</button>
+        <button class="icon-btn" title="Edit Order" onclick="openEditOrder('${o.id}')">✏️</button>
+        <button class="icon-btn danger" title="Delete Order" onclick="deleteOrder('${o.id}')">🗑️</button>
+      </td>`;
     }
     
     return `<tr>
+      ${chkCol}
       <td><strong style="color:var(--primary)">#${String(o.id).padStart(3,'0')}</strong></td>
       <td>
-        ${o.customer}
+        <strong>${o.customer}</strong> ${discBadge}
+        ${o.phone ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--primary);margin-top:2px;" title="Customer Phone">📞 ${o.phone}</div>` : ''}
         ${o.note ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${o.note.replace(/"/g, '&quot;')}">📝 ${o.note}</div>` : ''}
       </td>
       <td>
@@ -202,6 +289,7 @@ function buildOrderTable(list, compact) {
       <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${getItemLabel(o.items)}</td>
       <td><strong>₹${o.total.toLocaleString('en-IN')}</strong></td>
       <td>${o.time}</td>
+      ${kitchCol}
       ${payCol}
       ${delCol}
       ${actionCol}
@@ -209,10 +297,12 @@ function buildOrderTable(list, compact) {
   }).join('');
 
   const extraTh = compact
-    ? '<th>Payment</th><th>Delivery</th>'
-    : '<th>Payment ✓</th><th>Delivery ✓</th><th>Actions</th>';
+    ? '<th>Kitchen</th><th>Payment</th><th>Delivery</th>'
+    : '<th>Kitchen Status</th><th>Payment ✓</th><th>Delivery ✓</th><th>Actions</th>';
+  const chkTh = compact ? '' : '<th style="width:36px;"><input type="checkbox" id="selectAllChkBx" onchange="toggleSelectAllOrders(this)"></th>';
     
   return `<table><thead><tr>
+    ${chkTh}
     <th>Order #</th><th>Customer</th><th>Type</th><th>Items</th><th>Total</th><th>Time</th>
     ${extraTh}
   </tr></thead><tbody>${rows}</tbody></table>`;
@@ -232,12 +322,17 @@ async function downloadOrdersText() {
   let onlineRev = 0, onlineCount = 0;
   let dineInRev = 0, dineInCount = 0;
   let takeawayRev = 0, takeawayCount = 0;
+  let totalCashPayment = 0;
+  let totalOnlinePayment = 0;
 
   list.forEach(o => {
     totalRevenue += o.total;
     if (o.type === 'online') { onlineRev += o.total; onlineCount++; }
     else if (o.type === 'dine-in') { dineInRev += o.total; dineInCount++; }
     else { takeawayRev += o.total; takeawayCount++; }
+    
+    totalCashPayment += (o.cashAmount || 0);
+    totalOnlinePayment += (o.onlineAmount || 0);
   });
   
   let txt = `========================================================\r\n`;
@@ -247,7 +342,7 @@ async function downloadOrdersText() {
   txt += ` SUMMARY:\r\n`;
   txt += ` ------------------------------------------------------\r\n`;
   txt += ` Total Orders  : ${list.length}\r\n`;
-  txt += ` Total Revenue : Rs. ${totalRevenue}\r\n\r\n`;
+  txt += ` Total Revenue : Rs. ${totalRevenue} (Cash: Rs. ${totalCashPayment}, Online: Rs. ${totalOnlinePayment})\r\n\r\n`;
   txt += ` Breakdown by Type:\r\n`;
   txt += ` - Dine-in     : ${dineInCount} orders (Rs. ${dineInRev})\r\n`;
   txt += ` - Online      : ${onlineCount} orders (Rs. ${onlineRev})\r\n`;
@@ -523,6 +618,7 @@ function deleteOrder(id) {
 function openNewOrderModal() {
   newOrderItems = [];
   document.getElementById('customerName').value = '';
+  document.getElementById('customerPhone').value = '';
   document.getElementById('menuSearch').value = '';
   document.getElementById('orderNote').value = '';
   document.getElementById('orderTotalInput').value = '0';
@@ -630,30 +726,31 @@ function updatePayBalance(type) {
 
 function saveNewOrder() {
   const name = document.getElementById('customerName').value.trim();
+  const phone = document.getElementById('customerPhone').value.trim();
   if (!name) { showToast('Please enter customer name','error'); return; }
   if (!newOrderItems.length) { showToast('Please add at least one item','error'); return; }
-  const type = document.getElementById('orderType').value;
+  const typeEl = document.getElementById('orderType');
+  const type = typeEl ? typeEl.value : 'dine-in';
   const note = document.getElementById('orderNote').value.trim();
   const total = parseInt(document.getElementById('orderTotalInput').value) || 0;
   const cashAmount   = parseInt(document.getElementById('orderCashAmount').value) || 0;
   const onlineAmount = parseInt(document.getElementById('orderOnlineAmount').value) || 0;
   const paid = (cashAmount + onlineAmount) >= total;
-  // derive payMode for backwards compat display
   const payMode = cashAmount > 0 && onlineAmount > 0 ? 'split' : (onlineAmount > 0 ? 'online' : 'cash');
   const now = new Date();
   const hrs = now.getHours(); const mins = now.getMinutes();
   const ampm = hrs >= 12 ? 'PM' : 'AM';
   const displayHrs = hrs % 12 || 12;
   const time = `${String(displayHrs).padStart(2,'0')}:${String(mins).padStart(2,'0')} ${ampm}`;
-  // Daily order number — count today's orders + 1
   const dayNum = orders.filter(o => o.date === selectedDate).length + 1;
-  orders.push({ id:nextOrderId++, dayNum, customer:name, date:selectedDate, items:[...newOrderItems], paid, payMode, cashAmount, onlineAmount, type, delivered:false, time, total, note });
+  orders.push({ id:nextOrderId++, dayNum, customer:name, phone, ready:false, date:selectedDate, items:[...newOrderItems], paid, payMode, cashAmount, onlineAmount, type, delivered:false, time, total, note });
   saveData();
   closeModal('newOrderModal');
   renderOrders();
   if (currentPage === 'dashboard') renderDashboard();
   if (currentPage === 'analytics') renderAnalytics();
-  showToast(`Order #${dayNum} saved!`);
+  showToast(`Order #${dayNum} saved for ${name}!`);
+  addNotification(`📦 New Order #${dayNum} created for ${name}`, 'order');
 }
 
 // ---- EDIT ORDER ----
@@ -663,6 +760,7 @@ function openEditOrder(id) {
   editOrderItems = o.items.map(i => ({...i}));
   document.getElementById('editOrderId').value = o.id;
   document.getElementById('editCustomerName').value = o.customer;
+  document.getElementById('editCustomerPhone').value = o.phone || '';
   document.getElementById('editOrderType').value = o.type || 'dine-in';
   document.getElementById('editOrderNote').value = o.note || '';
   document.getElementById('editCashAmount').value = o.cashAmount || 0;
@@ -728,11 +826,13 @@ function renderEditOrderItems() {
 function updateOrder() {
   const id = parseInt(document.getElementById('editOrderId').value);
   const name = document.getElementById('editCustomerName').value.trim();
+  const phone = document.getElementById('editCustomerPhone').value.trim();
   if (!name) { showToast('Please enter customer name','error'); return; }
   if (!editOrderItems.length) { showToast('Add at least one item','error'); return; }
   const o = orders.find(o => String(o.id) === String(id));
   if (!o) return;
   o.customer = name;
+  o.phone = phone;
   o.items = [...editOrderItems];
   o.type = document.getElementById('editOrderType').value;
   o.note = document.getElementById('editOrderNote').value.trim();
@@ -912,8 +1012,9 @@ function renderAnalytics() {
   const topName = topM ? topM.name : 'N/A';
   const topOrders = sortedItems.length ? sortedItems[0].qty : 0;
 
-  const cashRev = filteredOrders.filter(o=>o.paid&&o.payMode==='cash').reduce((s,o)=>s+o.total,0);
-  const onlineRev = filteredOrders.filter(o=>o.paid&&o.payMode==='online').reduce((s,o)=>s+o.total,0);
+  // Use cashAmount/onlineAmount directly to correctly handle split payment orders
+  const cashRev = filteredOrders.reduce((s,o) => s + (o.cashAmount || 0), 0);
+  const onlineRev = filteredOrders.reduce((s,o) => s + (o.onlineAmount || 0), 0);
 
   document.getElementById('analyticsKpiGrid').innerHTML = `
     <div class="kpi-card"><div class="kpi-label">Total Revenue</div>
@@ -1036,8 +1137,9 @@ function openDayDrillDown(date) {
   // KPIs
   const rev = dayOrders.reduce((s,o) => s+o.total, 0);
   const paidRev = dayOrders.filter(o=>o.paid).reduce((s,o)=>s+o.total,0);
-  const cashRev = dayOrders.filter(o=>o.paid&&o.payMode==='cash').reduce((s,o)=>s+o.total,0);
-  const onlineRev = dayOrders.filter(o=>o.paid&&o.payMode==='online').reduce((s,o)=>s+o.total,0);
+  // Use cashAmount/onlineAmount directly to correctly handle split payment orders
+  const cashRev = dayOrders.reduce((s,o) => s + (o.cashAmount || 0), 0);
+  const onlineRev = dayOrders.reduce((s,o) => s + (o.onlineAmount || 0), 0);
   const unpaid = rev - paidRev;
   const avg = dayOrders.length ? Math.round(rev/dayOrders.length) : 0;
   const dineIn = dayOrders.filter(o=>o.type==='dine-in').length;
@@ -1116,12 +1218,12 @@ function openDayDrillDown(date) {
       <div class="drill-stat-box" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2)">
         <div style="font-size:11px;color:#22c55e;font-weight:600;margin-bottom:4px">💵 CASH</div>
         <div style="font-size:22px;font-weight:700;color:var(--text-color)">₹${cashRev.toLocaleString('en-IN')}</div>
-        <div style="font-size:11px;color:var(--text-muted)">${dayOrders.filter(o=>o.payMode==='cash').length} orders</div>
+        <div style="font-size:11px;color:var(--text-muted)">${dayOrders.filter(o=>(o.cashAmount||0)>0).length} orders</div>
       </div>
       <div class="drill-stat-box" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2)">
         <div style="font-size:11px;color:#3b82f6;font-weight:600;margin-bottom:4px">📱 ONLINE / UPI</div>
         <div style="font-size:22px;font-weight:700;color:var(--text-color)">₹${onlineRev.toLocaleString('en-IN')}</div>
-        <div style="font-size:11px;color:var(--text-muted)">${dayOrders.filter(o=>o.payMode==='online').length} orders</div>
+        <div style="font-size:11px;color:var(--text-muted)">${dayOrders.filter(o=>(o.onlineAmount||0)>0).length} orders</div>
       </div>
     </div>
     <div class="payment-summary-row"><span>✅ Paid</span><span class="payment-big" style="color:var(--success)">${paidCount} orders</span></div>
@@ -1222,7 +1324,12 @@ function initSparkCanvas() {
       this.speedY = -(Math.random() * 0.8 + 0.3);
       this.speedX = Math.random() * 0.4 - 0.2;
       this.opacity = Math.random() * 0.5 + 0.3;
-      this.color = `rgba(255, ${Math.floor(Math.random() * 60 + 90)}, 43, ${this.opacity})`;
+      const colors = [
+        `rgba(0, 243, 255, ${this.opacity})`,
+        `rgba(255, 0, 127, ${this.opacity})`,
+        `rgba(0, 255, 102, ${this.opacity})`
+      ];
+      this.color = colors[Math.floor(Math.random() * colors.length)];
     }
     update() {
       this.y += this.speedY;
@@ -1235,8 +1342,8 @@ function initSparkCanvas() {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
       ctx.fillStyle = this.color;
-      ctx.shadowBlur = this.size * 3;
-      ctx.shadowColor = 'rgba(255, 107, 43, 0.8)';
+      ctx.shadowBlur = this.size * 4;
+      ctx.shadowColor = this.color;
       ctx.fill();
     }
   }
@@ -1315,3 +1422,1599 @@ function startLiveSync() {
     }
   }, 4000);
 }
+
+// =============================================
+// KITCHEN DISPLAY SYSTEM (KDS)
+// =============================================
+let kdsFilter = 'all';
+let kdsTimerInterval = null;
+
+function renderKds(filter) {
+  kdsFilter = filter;
+  if (kdsTimerInterval) clearInterval(kdsTimerInterval);
+
+  const today = getTodayIST();
+  let list = orders.filter(o => o.date === today);
+  if (filter === 'pending') list = list.filter(o => !o.ready);
+  if (filter === 'delivered') list = list.filter(o => o.ready);
+  list = [...list].reverse();
+
+  const grid = document.getElementById('kdsTicketGrid');
+  if (!grid) return;
+
+  if (!list.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted);font-family:var(--font-mono);">
+      <div style="font-size:48px;margin-bottom:16px;">🍕</div>
+      <div style="font-size:14px;letter-spacing:2px;">NO ACTIVE ORDERS IN QUEUE</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(o => {
+    const items = o.items.map(it => {
+      const m = menuItems.find(x => x.id === it.menuId);
+      return `<div class="kds-item-row"><span class="kds-qty">${it.qty}×</span> <span>${m ? m.name : 'Unknown'}</span></div>`;
+    }).join('');
+
+    const typeIcon = o.type === 'dine-in' ? '🍽️' : o.type === 'online' ? '🛵' : '🛍️';
+    const urgency = o.ready ? 'done' : 'pending';
+    const elapsedId = `kds-elapsed-${o.id}`;
+
+    // Calculate duration for ready orders if missing
+    if (o.ready && !o.prepDurationStr) {
+      const orderMs = parseTimeToMs(o.time, o.date) || Date.now();
+      const diffMs = Math.max(0, Date.now() - orderMs);
+      const mins = Math.floor(diffMs / 60000);
+      const secs = Math.floor((diffMs % 60000) / 1000);
+      o.prepDurationStr = `✓ READY (${mins}m ${secs}s)`;
+    }
+
+    const elapsedText = o.ready ? o.prepDurationStr : '⏱ --:--';
+
+    return `<div class="kds-ticket ${urgency}" id="kds-ticket-${o.id}">
+      <div class="kds-ticket-header">
+        <span class="kds-order-num">#${String(o.id).padStart(3,'0')}</span>
+        <span class="kds-type-badge">${typeIcon} ${o.type.toUpperCase()}</span>
+        <span class="kds-elapsed" id="${elapsedId}" style="${o.ready ? 'color:var(--success);font-weight:bold;' : ''}">${elapsedText}</span>
+      </div>
+      <div class="kds-customer">
+        ${o.customer}
+        ${o.phone ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--primary);margin-top:2px;">📞 ${o.phone}</div>` : ''}
+      </div>
+      <div class="kds-items-list">${items}</div>
+      <div class="kds-ticket-footer">
+        <span class="kds-total">₹${o.total}</span>
+        ${!o.ready
+          ? `<button class="kds-ready-btn" onclick="markKdsReady('${o.id}')">🍳 MARK READY</button>`
+          : `<button class="kds-ready-btn" style="background:rgba(0,255,102,0.25);border-color:var(--success)" onclick="markKdsReady('${o.id}')">✓ READY (TOGGLE)</button>`
+        }
+      </div>
+      ${o.note ? `<div class="kds-note">📝 ${o.note}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Start elapsed timers (only for in-prep orders, freeze ready orders)
+  kdsTimerInterval = setInterval(() => {
+    const now = Date.now();
+    list.forEach(o => {
+      const el = document.getElementById(`kds-elapsed-${o.id}`);
+      if (!el) return;
+      if (o.ready) {
+        if (!o.prepDurationStr) {
+          const orderMs = parseTimeToMs(o.time, o.date) || Date.now();
+          const diffMs = Math.max(0, Date.now() - orderMs);
+          const mins = Math.floor(diffMs / 60000);
+          const secs = Math.floor((diffMs % 60000) / 1000);
+          o.prepDurationStr = `✓ READY (${mins}m ${secs}s)`;
+        }
+        el.textContent = o.prepDurationStr;
+        el.style.color = 'var(--success)';
+        return;
+      }
+      const orderTime = parseTimeToMs(o.time, o.date);
+      if (!orderTime) return;
+      const diffMs = now - orderTime;
+      if (diffMs < 0) return;
+      const mins = Math.floor(diffMs / 60000);
+      const secs = Math.floor((diffMs % 60000) / 1000);
+      el.textContent = `⏱ ${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+      const ticket = document.getElementById(`kds-ticket-${o.id}`);
+      if (ticket) {
+        if (mins >= 20) ticket.style.setProperty('--kds-border', 'var(--danger)');
+        else if (mins >= 10) ticket.style.setProperty('--kds-border', 'var(--warning)');
+        else ticket.style.setProperty('--kds-border', 'var(--success)');
+      }
+    });
+  }, 1000);
+}
+
+function parseTimeToMs(timeStr, dateStr) {
+  if (!timeStr || !dateStr) return null;
+  try {
+    let m = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    let hr, min;
+    if (m) {
+      hr = parseInt(m[1]); min = parseInt(m[2]);
+      const ap = m[3].toUpperCase();
+      if (ap === 'PM' && hr !== 12) hr += 12;
+      if (ap === 'AM' && hr === 12) hr = 0;
+    } else {
+      const m2 = timeStr.match(/(\d+):(\d+)/);
+      if (!m2) return null;
+      hr = parseInt(m2[1]); min = parseInt(m2[2]);
+    }
+    const [y, mo, d] = dateStr.split('-').map(Number);
+    return new Date(y, mo - 1, d, hr, min, 0).getTime();
+  } catch { return null; }
+}
+
+async function markKdsReady(orderId) {
+  const o = orders.find(x => String(x.id) === String(orderId));
+  if (!o) return;
+  o.ready = !o.ready;
+  if (o.ready) {
+    o.readyTime = Date.now();
+    const orderMs = parseTimeToMs(o.time, o.date) || Date.now();
+    const diffMs = Math.max(0, o.readyTime - orderMs);
+    const mins = Math.floor(diffMs / 60000);
+    const secs = Math.floor((diffMs % 60000) / 1000);
+    o.prepDurationStr = `✓ READY (${mins}m ${secs}s)`;
+  } else {
+    delete o.readyTime;
+    delete o.prepDurationStr;
+  }
+
+  cyberClick();
+  await saveData();
+  renderKds(kdsFilter);
+  if (currentPage === 'dashboard') renderDashboard();
+  if (currentPage === 'orders') renderOrders();
+  showToast(o.ready ? `Kitchen: Order #${orderId} READY in ${o.prepDurationStr}! 🍳` : `Kitchen: Order #${orderId} back to PREP ⏳`, 'success');
+  addNotification(o.ready ? `🍳 Kitchen Ready in ${o.prepDurationStr}: Order #${orderId} (${o.customer})` : `⏳ In Kitchen Prep: Order #${orderId}`, 'info');
+}
+
+function filterKds(filter, btn) {
+  document.querySelectorAll('.kds-filter-tabs .filter-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderKds(filter);
+}
+
+// =============================================
+// AI DEMAND FORECASTER
+// =============================================
+function runAiDemandForecast() {
+  // Analyze past orders to predict peak hours & top items
+  const now = new Date();
+  const hourCounts = new Array(24).fill(0);
+  const itemCounts = {};
+
+  orders.forEach(o => {
+    // parse hour
+    const hr = parseTimeToMs(o.time, o.date);
+    if (hr) {
+      const d = new Date(hr);
+      hourCounts[d.getHours()]++;
+    }
+    // count items
+    o.items.forEach(it => {
+      const m = menuItems.find(x => x.id === it.menuId);
+      if (m) {
+        itemCounts[m.name] = (itemCounts[m.name] || 0) + it.qty;
+      }
+    });
+  });
+
+  // Find peak hour range
+  let maxHour = 0, maxCount = 0;
+  for (let i = 0; i < 24; i++) {
+    if (hourCounts[i] > maxCount) { maxCount = hourCounts[i]; maxHour = i; }
+  }
+  const fmt = (h) => {
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:00 ${ampm}`;
+  };
+  const peakStr = maxCount > 0 ? `${fmt(maxHour)} – ${fmt(maxHour + 1)}` : 'Not enough data';
+
+  // Find top item
+  const sorted = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]);
+  const topItem = sorted.length ? sorted[0][0] : 'No data yet';
+  const totalOrders = orders.length;
+  const growthEst = totalOrders > 10 ? `+${Math.floor(Math.random() * 30 + 15)}% Surge` : 'Gathering data...';
+
+  const peakEl = document.getElementById('aiPeakTime');
+  const topEl = document.getElementById('aiTopItem');
+  const volEl = document.getElementById('aiEstVol');
+  if (peakEl) peakEl.textContent = peakStr;
+  if (topEl) topEl.textContent = topItem;
+  if (volEl) volEl.textContent = growthEst;
+
+  // animate bar
+  const fill = document.querySelector('.forecast-fill');
+  if (fill) {
+    const pct = maxCount > 0 ? Math.min(100, Math.floor((maxCount / Math.max(...hourCounts)) * 100)) : 60;
+    fill.style.width = pct + '%';
+  }
+  showToast('✨ AI Neural Model Recalculated!');
+  cyberClick();
+}
+
+// =============================================
+// WEB AUDIO CYBER SYNTH EFFECTS
+// =============================================
+let audioCtx = null;
+let audioEnabled = true;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playSynth(freq, type, duration, vol = 0.15, detune = 0) {
+  if (!audioEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    osc.detune.setValueAtTime(detune, ctx.currentTime);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(); osc.stop(ctx.currentTime + duration);
+  } catch (e) { /* silently fail */ }
+}
+
+function cyberClick() {
+  playSynth(880, 'square', 0.08, 0.1);
+  setTimeout(() => playSynth(1200, 'square', 0.06, 0.07), 50);
+}
+
+function cyberSuccess() {
+  playSynth(440, 'sine', 0.1, 0.12);
+  setTimeout(() => playSynth(660, 'sine', 0.15, 0.12), 100);
+  setTimeout(() => playSynth(880, 'sine', 0.2, 0.12), 220);
+}
+
+function cyberAlert() {
+  playSynth(220, 'sawtooth', 0.3, 0.18);
+  setTimeout(() => playSynth(180, 'sawtooth', 0.25, 0.15), 200);
+}
+
+function toggleCyberAudio() {
+  audioEnabled = !audioEnabled;
+  const icon = document.getElementById('audioIcon');
+  const btn = document.getElementById('audioToggleBtn');
+  if (icon) icon.textContent = audioEnabled ? '🔊' : '🔇';
+  if (btn) btn.classList.toggle('muted', !audioEnabled);
+  if (audioEnabled) cyberClick();
+  showToast(audioEnabled ? '🔊 Cyber Audio Synthesizer ONLINE' : '🔇 Audio OFFLINE');
+}
+
+// =============================================
+// INSTANT POS SYNTHESIZER MODAL
+// =============================================
+let posItems = [];
+
+function openPosModal() {
+  cyberClick();
+  posItems = [];
+  renderPosGrid();
+  renderPosBill();
+  openModal('posModal');
+}
+
+function renderPosGrid() {
+  const grid = document.getElementById('posMenuGrid');
+  if (!grid) return;
+  const avail = menuItems.filter(m => m.available);
+  grid.innerHTML = avail.map(m => `
+    <button class="pos-tile" onclick="addPosItem(${m.id})" title="${m.desc}">
+      <span class="pos-tile-name">${m.name}</span>
+      <span class="pos-tile-price">₹${m.price}</span>
+    </button>
+  `).join('');
+}
+
+function addPosItem(menuId) {
+  cyberClick();
+  const m = menuItems.find(x => x.id === menuId);
+  if (!m) return;
+  const existing = posItems.find(x => x.menuId === menuId);
+  if (existing) existing.qty++;
+  else posItems.push({ menuId, qty: 1, unitPrice: m.price });
+  renderPosBill();
+}
+
+function removePosItem(menuId) {
+  const idx = posItems.findIndex(x => x.menuId === menuId);
+  if (idx === -1) return;
+  if (posItems[idx].qty > 1) posItems[idx].qty--;
+  else posItems.splice(idx, 1);
+  renderPosBill();
+}
+
+function renderPosBill() {
+  const bill = document.getElementById('posBillList');
+  const totalEl = document.getElementById('posBillTotal');
+  if (!bill) return;
+
+  if (!posItems.length) {
+    bill.innerHTML = `<p style="padding:20px;text-align:center;color:var(--text-muted);font-family:var(--font-mono);font-size:12px;">TAP ITEMS TO ADD TO QUEUE</p>`;
+    if (totalEl) totalEl.textContent = '₹0';
+    return;
+  }
+
+  const total = posItems.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+  bill.innerHTML = posItems.map(it => {
+    const m = menuItems.find(x => x.id === it.menuId);
+    return `<div class="pos-bill-row">
+      <span class="pos-bill-name">${m ? m.name : 'Unknown'}</span>
+      <div class="pos-bill-controls">
+        <button class="pos-qty-btn" onclick="removePosItem(${it.menuId})">−</button>
+        <span class="pos-qty-val">${it.qty}</span>
+        <button class="pos-qty-btn" onclick="addPosItem(${it.menuId})">+</button>
+        <span class="pos-bill-subtotal">₹${it.qty * it.unitPrice}</span>
+      </div>
+    </div>`;
+  }).join('');
+  if (totalEl) totalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
+}
+
+async function submitPosOrder() {
+  if (!posItems.length) { showToast('Add items first!', 'error'); return; }
+  const customerEl = document.getElementById('posCustomerName');
+  const phoneEl = document.getElementById('posCustomerPhone');
+  const typeEl = document.getElementById('posOrderType');
+  const customer = (customerEl && customerEl.value.trim()) || 'Walk-in Customer';
+  const phone = (phoneEl && phoneEl.value.trim()) || '';
+  const type = (typeEl && typeEl.value) || 'dine-in';
+  const total = posItems.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+
+  const now = new Date();
+  const hr = now.getHours(), mn = now.getMinutes();
+  const ampm = hr >= 12 ? 'PM' : 'AM';
+  const h12 = hr % 12 || 12;
+  const timeStr = `${h12}:${String(mn).padStart(2,'0')} ${ampm}`;
+
+  const newOrder = {
+    id: nextOrderId++,
+    customer,
+    phone,
+    ready: false,
+    items: posItems.map(it => ({ ...it })),
+    total,
+    type,
+    date: getTodayIST(),
+    time: timeStr,
+    paid: false,
+    delivered: false,
+    payMode: 'cash',
+    cashAmount: 0,
+    onlineAmount: 0,
+    note: ''
+  };
+  orders.push(newOrder);
+  await saveData();
+  cyberSuccess();
+  closeModal('posModal');
+  showToast(`✅ POS Order #${newOrder.id} created for ${customer}!`);
+  if (currentPage === 'dashboard') renderDashboard();
+  if (currentPage === 'orders') renderOrders();
+  if (currentPage === 'kds') renderKds(kdsFilter);
+}
+
+// =============================================
+// TELEMETRY BAR LIVE ANIMATION
+// =============================================
+function animateTelemetry() {
+  setInterval(() => {
+    // Simulate slight fluctuations
+    const oven = (480 + Math.floor(Math.random() * 15));
+    const warp = (99 + Math.random()).toFixed(1);
+    const drones = Math.random() > 0.95 ? '7/10 ACTIVE' : '8/10 ACTIVE';
+    const items = document.querySelectorAll('.tele-item strong');
+    if (items[0]) items[0].textContent = `${oven}°C`;
+    if (items[1]) items[1].textContent = `${warp}%`;
+    if (items[2]) items[2].textContent = drones;
+  }, 3000);
+}
+
+// Initialize new features on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  animateTelemetry();
+  // Run AI forecast once data is loaded
+  setTimeout(runAiDemandForecast, 1500);
+});
+
+
+// =============================================
+// LIVE CLOCK
+// =============================================
+function startLiveClock() {
+  function tick() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    const ct = document.getElementById('clockTime');
+    const cd = document.getElementById('clockDateShort');
+    if (ct) ct.textContent = `${h}:${m}:${s}`;
+    if (cd) cd.textContent = now.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) + ' IST';
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// =============================================
+// LIVE TICKER BAR
+// =============================================
+function updateTicker() {
+  const today = getTodayIST();
+  const dOrders = orders.filter(o => o.date === today);
+  const rev = dOrders.reduce((s,o) => s+o.total, 0);
+  const pending = dOrders.filter(o => !o.delivered).length;
+  const paid = dOrders.filter(o => o.paid).length;
+  const online = dOrders.filter(o => o.type === 'online').length;
+
+  // Find top item
+  const itemCount = {};
+  dOrders.forEach(o => o.items.forEach(it => {
+    const m = menuItems.find(x => x.id === it.menuId);
+    if (m) itemCount[m.name] = (itemCount[m.name]||0) + it.qty;
+  }));
+  const topItem = Object.entries(itemCount).sort((a,b)=>b[1]-a[1])[0];
+
+  const content = document.getElementById('tickerContent');
+  if (!content) return;
+  const segments = [
+    `📦 TODAY ORDERS: <strong>${dOrders.length}</strong>`,
+    `💰 REVENUE: <strong>₹${rev.toLocaleString('en-IN')}</strong>`,
+    `⏳ PENDING: <strong>${pending}</strong>`,
+    `✅ PAID: <strong>${paid}</strong>`,
+    `🛵 ONLINE ORDERS: <strong>${online}</strong>`,
+    topItem ? `🍕 TOP ITEM: <strong>${topItem[0]}</strong> (${topItem[1]}x)` : `🍕 NO ORDERS YET`,
+    `🎯 TARGET: <strong>${Math.round((rev/(parseInt(localStorage.getItem('pizzaCafeTarget')||5000))*100))}% OF GOAL</strong>`,
+    `⚡ SYSTEM: <strong>ALL SYSTEMS NOMINAL</strong>`
+  ];
+  content.innerHTML = segments.join(`<span class="ticker-sep"> &nbsp;◆&nbsp; </span>`);
+}
+
+// =============================================
+// GLOBAL SEARCH
+// =============================================
+function openGlobalSearch() {
+  document.getElementById('searchOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('globalSearchInput').focus(), 50);
+  cyberClick();
+}
+
+function closeGlobalSearch() {
+  document.getElementById('searchOverlay').classList.remove('open');
+  document.getElementById('globalSearchInput').value = '';
+  document.getElementById('searchResults').innerHTML = '<div class="search-hint">Type to search across all orders and menu items...</div>';
+}
+
+function runGlobalSearch(query) {
+  const q = query.trim().toLowerCase();
+  const res = document.getElementById('searchResults');
+  if (!q || q.length < 2) {
+    res.innerHTML = '<div class="search-hint">Type at least 2 characters...</div>';
+    return;
+  }
+
+  const matchedOrders = orders.filter(o =>
+    String(o.id).includes(q) ||
+    o.customer.toLowerCase().includes(q) ||
+    (o.phone && o.phone.toLowerCase().includes(q)) ||
+    (o.note && o.note.toLowerCase().includes(q)) ||
+    o.date.includes(q)
+  ).slice(0,8);
+
+  const matchedItems = menuItems.filter(m =>
+    m.name.toLowerCase().includes(q) ||
+    m.desc.toLowerCase().includes(q)
+  ).slice(0,5);
+
+  let html = '';
+
+  if (matchedOrders.length) {
+    html += `<div class="search-section-label">🧾 ORDERS (${matchedOrders.length})</div>`;
+    html += matchedOrders.map(o => `
+      <div class="search-result-item" onclick="navigate('orders');changeOrderDate('${o.date}');closeGlobalSearch()">
+        <span class="sr-badge">#${String(o.id).padStart(3,'0')}</span>
+        <span class="sr-main">${o.customer} ${o.phone ? `<small style="color:var(--primary);margin-left:6px;font-family:var(--font-mono)">📞 ${o.phone}</small>` : ''}</span>
+        <span class="sr-sub">${o.date} · ₹${o.total} · ${o.type}</span>
+        <span class="sr-status ${o.paid?'paid':'unpaid'}">${o.paid?'PAID':'UNPAID'}</span>
+      </div>`).join('');
+  }
+
+  if (matchedItems.length) {
+    html += `<div class="search-section-label">🍕 MENU ITEMS (${matchedItems.length})</div>`;
+    html += matchedItems.map(m => `
+      <div class="search-result-item" onclick="navigate('menu');closeGlobalSearch()">
+        <span class="sr-badge">₹${m.price}</span>
+        <span class="sr-main">${m.name}</span>
+        <span class="sr-sub">${m.desc}</span>
+        <span class="sr-status ${m.available?'paid':'unpaid'}">${m.available?'AVAIL':'UNAVAIL'}</span>
+      </div>`).join('');
+  }
+
+  if (!html) {
+    html = `<div class="search-hint">No results for "<strong style="color:var(--primary)">${query}</strong>"</div>`;
+  }
+
+  res.innerHTML = html;
+}
+
+// =============================================
+// KEYBOARD SHORTCUTS
+// =============================================
+function initKeyboardShortcuts() {
+  document.addEventListener('keydown', e => {
+    // Don't trigger shortcuts when typing in inputs
+    const tag = document.activeElement.tagName;
+    const inInput = (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
+
+    if (e.key === 'Escape') {
+      closeGlobalSearch();
+      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+      return;
+    }
+
+    if (e.ctrlKey && e.key === 'k') { e.preventDefault(); openGlobalSearch(); return; }
+    if (e.ctrlKey && e.key === 'n' && !inInput) { e.preventDefault(); openNewOrderModal(); return; }
+    if (e.ctrlKey && e.key === 'p' && !inInput) { e.preventDefault(); openPosModal(); return; }
+    if (e.ctrlKey && e.key === '/') { e.preventDefault(); openModal('shortcutsModal'); return; }
+    if (e.ctrlKey && e.key === 't' && !inInput) { e.preventDefault(); openModal('targetModal'); loadTargetInput(); return; }
+    if (e.ctrlKey && e.key === '1' && !inInput) { e.preventDefault(); navigate('dashboard'); return; }
+    if (e.ctrlKey && e.key === '2' && !inInput) { e.preventDefault(); navigate('orders'); return; }
+    if (e.ctrlKey && e.key === '3' && !inInput) { e.preventDefault(); navigate('kds'); return; }
+    if (e.ctrlKey && e.key === '4' && !inInput) { e.preventDefault(); navigate('menu'); return; }
+    if (e.ctrlKey && e.key === '5' && !inInput) { e.preventDefault(); navigate('analytics'); return; }
+    if (e.altKey && e.key.toLowerCase() === 'a') { e.preventDefault(); toggleCyberAudio(); return; }
+  });
+}
+
+// =============================================
+// REVENUE TARGET
+// =============================================
+function loadTargetInput() {
+  const t = localStorage.getItem('pizzaCafeTarget') || '5000';
+  const el = document.getElementById('targetInput');
+  if (el) el.value = t;
+}
+
+function saveRevenueTarget() {
+  const val = parseInt(document.getElementById('targetInput').value);
+  if (!val || val < 100) { showToast('Enter a valid target (min ₹100)', 'error'); return; }
+  localStorage.setItem('pizzaCafeTarget', val);
+  closeModal('targetModal');
+  cyberSuccess();
+  showToast(`🎯 Daily target set to ₹${val.toLocaleString('en-IN')}!`);
+  if (currentPage === 'dashboard') renderDashboard();
+}
+
+// =============================================
+// CUSTOMER LEADERBOARD
+// =============================================
+function getCustomerStats() {
+  const stats = {};
+  orders.forEach(o => {
+    if (!stats[o.customer]) stats[o.customer] = { name: o.customer, orders: 0, total: 0 };
+    stats[o.customer].orders++;
+    stats[o.customer].total += o.total;
+  });
+  return Object.values(stats).sort((a,b) => b.total - a.total);
+}
+
+function showLeaderboard() {
+  cyberClick();
+  const customers = getCustomerStats().slice(0, 20);
+  const medals = ['🥇','🥈','🥉'];
+  const content = document.getElementById('leaderboardContent');
+  if (!content) return;
+
+  content.innerHTML = `
+    <div style="padding:0">
+      ${customers.length === 0 ? '<p style="padding:20px;color:var(--text-muted)">No order data yet.</p>' :
+        customers.map((c, i) => `
+          <div class="leaderboard-row ${i < 3 ? 'top-three' : ''}">
+            <span class="lb-rank">${medals[i] || `#${i+1}`}</span>
+            <span class="lb-name">${c.name}</span>
+            <div class="lb-stats">
+              <span class="lb-orders">${c.orders} orders</span>
+              <span class="lb-total">₹${c.total.toLocaleString('en-IN')}</span>
+            </div>
+          </div>`).join('')
+      }
+    </div>`;
+  openModal('leaderboardModal');
+
+  // Also update mini leaderboard on dashboard
+  const mini = document.getElementById('miniLeaderboard');
+  if (mini) {
+    const top5 = customers.slice(0,5);
+    mini.innerHTML = top5.length ? top5.map((c,i) => `
+      <div class="mini-lb-row">
+        <span class="mini-lb-rank" style="color:${i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--text-muted)'}">${medals[i]||`#${i+1}`}</span>
+        <span class="mini-lb-name">${c.name}</span>
+        <span class="mini-lb-val">₹${c.total.toLocaleString('en-IN')}</span>
+      </div>`).join('') : '<p style="padding:12px;color:var(--text-muted);font-size:12px">No data yet</p>';
+  }
+}
+
+function renderMiniLeaderboard() {
+  const customers = getCustomerStats().slice(0,5);
+  const medals = ['🥇','🥈','🥉'];
+  const mini = document.getElementById('miniLeaderboard');
+  if (!mini) return;
+  mini.innerHTML = customers.length ? customers.map((c,i) => `
+    <div class="mini-lb-row">
+      <span class="mini-lb-rank" style="color:${i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--text-muted)'}">${medals[i]||`#${i+1}`}</span>
+      <span class="mini-lb-name">${c.name}</span>
+      <span class="mini-lb-val">₹${c.total.toLocaleString('en-IN')}</span>
+    </div>`).join('') : '<p style="padding:12px;color:var(--text-muted);font-size:12px">No data yet</p>';
+}
+
+// =============================================
+// SPLIT BILL CALCULATOR
+// =============================================
+let splitPeople = 2;
+let splitTipPct = 0;
+
+function changeSplitPeople(delta) {
+  splitPeople = Math.max(1, splitPeople + delta);
+  document.getElementById('splitPeopleCount').textContent = splitPeople;
+  calcSplit();
+}
+
+function setSplitTip(pct) {
+  splitTipPct = pct;
+  calcSplit();
+}
+
+function calcSplit() {
+  const bill = parseFloat(document.getElementById('splitTotalInput')?.value || 0);
+  const tip = bill * (splitTipPct / 100);
+  const grand = bill + tip;
+  const perPerson = splitPeople > 0 ? grand / splitPeople : 0;
+  const fmt = (v) => `₹${Math.ceil(v).toLocaleString('en-IN')}`;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('splitBillDisplay', fmt(bill));
+  set('splitTipDisplay', fmt(tip));
+  set('splitGrandTotal', fmt(grand));
+  set('splitPerPerson', fmt(perPerson));
+}
+
+// =============================================
+// STAFF QUICK NOTES
+// =============================================
+function loadNotes() {
+  const area = document.getElementById('staffNotesArea');
+  const ts = document.getElementById('notesTimestamp');
+  if (area) {
+    area.value = localStorage.getItem('pizzaCafeNotes') || '';
+  }
+  const saved = localStorage.getItem('pizzaCafeNotesTs');
+  if (ts && saved) ts.textContent = 'Last saved: ' + new Date(parseInt(saved)).toLocaleTimeString('en-IN');
+}
+
+function saveNotes() {
+  const area = document.getElementById('staffNotesArea');
+  if (!area) return;
+  localStorage.setItem('pizzaCafeNotes', area.value);
+  localStorage.setItem('pizzaCafeNotesTs', Date.now());
+  const ts = document.getElementById('notesTimestamp');
+  if (ts) ts.textContent = 'Last saved: ' + new Date().toLocaleTimeString('en-IN');
+  cyberClick();
+  showToast('📋 Staff notes saved!');
+}
+
+function toggleNotes() {
+  const body = document.getElementById('notesBody');
+  const icon = document.getElementById('notesToggleIcon');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.textContent = open ? '▼' : '▲';
+}
+
+// =============================================
+// FAB QUICK-ACTION WHEEL
+// =============================================
+let fabOpen = false;
+function toggleFab() {
+  fabOpen = !fabOpen;
+  const actions = document.getElementById('fabActions');
+  const main = document.querySelector('.fab-main');
+  if (actions) actions.classList.toggle('fab-open', fabOpen);
+  if (main) main.style.transform = fabOpen ? 'rotate(45deg)' : 'rotate(0deg)';
+  if (fabOpen) cyberClick();
+}
+
+
+// =============================================
+// NOTIFICATION DRAWER SYSTEM
+// =============================================
+let notifications = [
+  { id: 1, text: "System online & synced with local database", time: "Just now", type: "system" },
+  { id: 2, text: "All Quantum Telemetry channels operating optimal", time: "5 min ago", type: "system" }
+];
+let unreadNotifCount = 2;
+
+function toggleNotificationDrawer() {
+  const drawer = document.getElementById('notificationDrawer');
+  if (!drawer) return;
+  const isOpen = drawer.classList.contains('open');
+  if (isOpen) {
+    drawer.classList.remove('open');
+  } else {
+    drawer.classList.add('open');
+    unreadNotifCount = 0;
+    updateNotifBadge();
+    renderNotifications();
+  }
+  cyberClick();
+}
+
+function addNotification(text, type = "info") {
+  const now = new Date();
+  const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  notifications.unshift({ id: Date.now(), text, time: timeStr, type });
+  unreadNotifCount++;
+  updateNotifBadge();
+  cyberAlert();
+}
+
+function updateNotifBadge() {
+  const b = document.getElementById('notifBadge');
+  if (!b) return;
+  b.textContent = unreadNotifCount;
+  b.style.display = unreadNotifCount > 0 ? 'inline-flex' : 'none';
+}
+
+function renderNotifications() {
+  const list = document.getElementById('notifFeedList');
+  if (!list) return;
+  if (!notifications.length) {
+    list.innerHTML = `<div class="notif-empty">No system alerts...</div>`;
+    return;
+  }
+  list.innerHTML = notifications.map(n => `
+    <div class="notif-item ${n.type}">
+      <div class="notif-item-text">${n.text}</div>
+      <div class="notif-item-time">${n.time}</div>
+    </div>
+  `).join('');
+}
+
+function clearNotifications() {
+  notifications = [];
+  unreadNotifCount = 0;
+  updateNotifBadge();
+  renderNotifications();
+  showToast('Notifications cleared');
+}
+
+// =============================================
+// PIN SECURITY LOCK SYSTEM
+// =============================================
+let pinInput = '';
+const CORRECT_PIN = '1234';
+
+function lockPortal() {
+  pinInput = '';
+  updatePinDots();
+  const overlay = document.getElementById('pinLockOverlay');
+  if (overlay) overlay.classList.add('open');
+  cyberAlert();
+}
+
+function pressPin(digit) {
+  if (pinInput.length >= 4) return;
+  pinInput += digit;
+  cyberClick();
+  updatePinDots();
+  if (pinInput.length === 4) {
+    setTimeout(verifyPin, 150);
+  }
+}
+
+function clearPin() {
+  pinInput = '';
+  updatePinDots();
+  cyberClick();
+}
+
+function backspacePin() {
+  pinInput = pinInput.slice(0, -1);
+  updatePinDots();
+  cyberClick();
+}
+
+function updatePinDots() {
+  const dots = document.querySelectorAll('.pin-dot');
+  dots.forEach((dot, idx) => {
+    dot.classList.toggle('filled', idx < pinInput.length);
+  });
+  const err = document.getElementById('pinErrorMsg');
+  if (err) err.textContent = '';
+}
+
+function verifyPin() {
+  if (pinInput === CORRECT_PIN) {
+    cyberSuccess();
+    const overlay = document.getElementById('pinLockOverlay');
+    if (overlay) overlay.classList.remove('open');
+    showToast('🔓 Portal Unlocked Successfully!', 'success');
+  } else {
+    cyberAlert();
+    const card = document.querySelector('.pin-lock-card');
+    if (card) {
+      card.classList.add('shake');
+      setTimeout(() => card.classList.remove('shake'), 500);
+    }
+    const err = document.getElementById('pinErrorMsg');
+    if (err) err.textContent = '❌ Invalid Security PIN! Try 1234';
+    pinInput = '';
+    updatePinDots();
+  }
+}
+
+// =============================================
+// MULTI-THEME ACCENT ENGINE
+// =============================================
+function setThemeAccent(accentName) {
+  const root = document.documentElement;
+  const swatches = document.querySelectorAll('.theme-swatch');
+  swatches.forEach(s => s.classList.remove('active'));
+  const activeSwatch = document.querySelector(`.theme-swatch.${accentName}`);
+  if (activeSwatch) activeSwatch.classList.add('active');
+
+  const themes = {
+    cyan: {
+      primary:          '#00F3FF',
+      primaryHover:     '#4DF6FF',
+      primaryGlow:      'rgba(0, 243, 255, 0.65)',
+      primaryGlowInt:   'rgba(0, 243, 255, 0.95)',
+      primaryDim:       'rgba(0, 243, 255, 0.15)',
+      border:           'rgba(0, 243, 255, 0.22)',
+      border2:          'rgba(0, 243, 255, 0.45)',
+      gridLine:         'rgba(0, 243, 255, 0.04)',
+    },
+    magenta: {
+      primary:          '#FF007F',
+      primaryHover:     '#FF4DA6',
+      primaryGlow:      'rgba(255, 0, 127, 0.65)',
+      primaryGlowInt:   'rgba(255, 0, 127, 0.95)',
+      primaryDim:       'rgba(255, 0, 127, 0.15)',
+      border:           'rgba(255, 0, 127, 0.22)',
+      border2:          'rgba(255, 0, 127, 0.45)',
+      gridLine:         'rgba(255, 0, 127, 0.04)',
+    },
+    emerald: {
+      primary:          '#00FF66',
+      primaryHover:     '#4DFFA0',
+      primaryGlow:      'rgba(0, 255, 102, 0.65)',
+      primaryGlowInt:   'rgba(0, 255, 102, 0.95)',
+      primaryDim:       'rgba(0, 255, 102, 0.15)',
+      border:           'rgba(0, 255, 102, 0.22)',
+      border2:          'rgba(0, 255, 102, 0.45)',
+      gridLine:         'rgba(0, 255, 102, 0.04)',
+    },
+    violet: {
+      primary:          '#9D00FF',
+      primaryHover:     '#BC4DFF',
+      primaryGlow:      'rgba(157, 0, 255, 0.65)',
+      primaryGlowInt:   'rgba(157, 0, 255, 0.95)',
+      primaryDim:       'rgba(157, 0, 255, 0.15)',
+      border:           'rgba(157, 0, 255, 0.22)',
+      border2:          'rgba(157, 0, 255, 0.45)',
+      gridLine:         'rgba(157, 0, 255, 0.04)',
+    }
+  };
+
+  const t = themes[accentName] || themes.cyan;
+
+  // Core color variables
+  root.style.setProperty('--primary',                t.primary);
+  root.style.setProperty('--primary-hover',          t.primaryHover);
+  root.style.setProperty('--primary-glow',           t.primaryGlow);
+  root.style.setProperty('--primary-glow-intense',   t.primaryGlowInt);
+  root.style.setProperty('--primary-dim',            t.primaryDim);
+
+  // Border variables — these color the entire UI chrome
+  root.style.setProperty('--border',                 t.border);
+  root.style.setProperty('--border2',                t.border2);
+
+  // Dynamically update the body background grid lines to match the theme
+  // (they use hardcoded rgba in CSS so we inject a style tag)
+  let themeStyleTag = document.getElementById('dynamic-theme-style');
+  if (!themeStyleTag) {
+    themeStyleTag = document.createElement('style');
+    themeStyleTag.id = 'dynamic-theme-style';
+    document.head.appendChild(themeStyleTag);
+  }
+  themeStyleTag.textContent = `
+    body::before {
+      background-image:
+        linear-gradient(${t.gridLine} 1px, transparent 1px),
+        linear-gradient(90deg, ${t.gridLine} 1px, transparent 1px);
+    }
+    .kpi-card { border-color: ${t.border}; }
+    .kpi-card.success { border-color: rgba(0,255,102,0.3); }
+    .kpi-card.danger  { border-color: rgba(255,0,85,0.3); }
+    .kpi-card.warning { border-color: rgba(255,183,0,0.3); }
+    ::-webkit-scrollbar-thumb { background: ${t.primary}; }
+    ::selection { background: ${t.primaryDim}; color: ${t.primary}; }
+    .sidebar-nav-item.active { color: ${t.primary}; border-left-color: ${t.primary}; background: ${t.primaryDim}; }
+    .sidebar-nav-item:hover  { color: ${t.primary}; background: ${t.primaryDim}; }
+    .form-input:focus { border-color: ${t.primary}; box-shadow: 0 0 0 2px ${t.primaryDim}; }
+    .btn-primary { background: linear-gradient(135deg, ${t.primary}, ${t.primaryHover}); box-shadow: 0 0 16px ${t.primaryGlow}; }
+    .btn-primary:hover { box-shadow: 0 0 28px ${t.primaryGlow}; }
+    .kds-ready-btn:not([style*="rgba(0,255,102"]) { border-color: ${t.primary}; color: ${t.primary}; }
+    .modal { border-color: ${t.border2}; }
+    .mobile-bottom-nav { border-top-color: ${t.border2}; }
+    .mb-nav-item.active { color: ${t.primary}; }
+    .mb-nav-item.active .mb-nav-icon { filter: drop-shadow(0 0 6px ${t.primaryGlow}); }
+    .topbar { border-bottom-color: ${t.border}; }
+    .sidebar { border-right-color: ${t.border}; }
+    .table-card { border-color: ${t.border}; }
+    .card { border-color: ${t.border}; }
+    .filter-tab.active { background: ${t.primaryDim}; color: ${t.primary}; border-color: ${t.primary}; }
+    .progress-bar-fill { background: linear-gradient(90deg, ${t.primary}, ${t.primaryHover}); }
+    .kpi-icon { color: ${t.primary}; }
+    .kpi-value { color: ${t.primary}; }
+  `;
+
+  localStorage.setItem('pizzaCafeTheme', accentName);
+  cyberClick();
+  showToast(`🎨 Full Theme switched to ${accentName.toUpperCase()}`);
+}
+
+// =============================================
+// THERMAL RECEIPT GENERATOR
+// =============================================
+let currentThermalOrder = null;
+
+function openThermalReceipt(orderId) {
+  const o = orders.find(x => String(x.id) === String(orderId));
+  if (!o) return;
+  currentThermalOrder = o;
+
+  const dash = '--------------------------------';
+
+  const itemsHtml = o.items.map(it => {
+    const m = menuItems.find(x => x.id === it.menuId);
+    const name = m ? m.name : 'Unknown Item';
+    const price = it.unitPrice !== undefined ? it.unitPrice : (m ? m.price : 0);
+    const sub = price * it.qty;
+    return `<tr>
+      <td style="text-align:left;max-width:130px;word-break:break-word;">${name}</td>
+      <td style="text-align:center;padding:4px 6px;">${it.qty}</td>
+      <td style="text-align:right;white-space:nowrap;">₹${price}</td>
+      <td style="text-align:right;font-weight:bold;white-space:nowrap;">₹${sub}</td>
+    </tr>`;
+  }).join('');
+
+  const subtotal = o.items.reduce((s, it) => {
+    const m = menuItems.find(x => x.id === it.menuId);
+    const price = it.unitPrice !== undefined ? it.unitPrice : (m ? m.price : 0);
+    return s + price * it.qty;
+  }, 0);
+
+  const paper = document.getElementById('thermalPaperContent');
+  if (!paper) return;
+
+  paper.innerHTML = `
+    <div class="tp-header">
+      <div class="tp-logo">🍕 PIZZACAFE</div>
+      <div class="tp-sub">BABUPETH, CHANDRAPUR</div>
+      <div class="tp-sub">TEL: +91 8411059504</div>
+    </div>
+    <div class="tp-dash">${dash}</div>
+
+    <div class="tp-meta">
+      <table style="width:100%;font-size:12px;border:none;">
+        <tr><td style="width:80px;">ORDER</td><td><strong>#${String(o.id).padStart(3,'0')}</strong></td></tr>
+        <tr><td>TYPE</td><td><strong>${o.type.toUpperCase()}</strong></td></tr>
+        <tr><td>DATE</td><td>${o.date} ${o.time}</td></tr>
+        <tr><td>CUSTOMER</td><td><strong>${o.customer}</strong></td></tr>
+        ${o.phone ? `<tr><td>PHONE</td><td>${o.phone}</td></tr>` : ''}
+        ${o.note ? `<tr><td>NOTE</td><td style="font-style:italic;">${o.note}</td></tr>` : ''}
+      </table>
+    </div>
+    <div class="tp-dash">${dash}</div>
+
+    <table class="tp-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;">ITEM</th>
+          <th style="text-align:center;">QTY</th>
+          <th style="text-align:right;">RATE</th>
+          <th style="text-align:right;">AMT</th>
+        </tr>
+      </thead>
+      <tbody>${itemsHtml}</tbody>
+    </table>
+    <div class="tp-dash">${dash}</div>
+
+    <div class="tp-totals">
+      <div class="tp-total-row"><span>SUBTOTAL</span><span>₹${subtotal}</span></div>
+      ${o.discount ? `<div class="tp-total-row"><span>DISCOUNT (${o.discount.label})</span><span>-₹${o.discount.savings}</span></div>` : ''}
+      <div class="tp-total-row grand"><span>TOTAL AMOUNT</span><span>₹${o.total}</span></div>
+    </div>
+    <div class="tp-dash">${dash}</div>
+
+    <div class="tp-payinfo">
+      <div>PAYMENT: <strong>${o.payMode ? o.payMode.toUpperCase() : 'CASH'} (${o.paid ? 'PAID' : 'UNPAID'})</strong></div>
+      ${o.cashAmount ? `<div>CASH TENDERED: ₹${o.cashAmount}</div>` : ''}
+      ${o.onlineAmount ? `<div>ONLINE / UPI: ₹${o.onlineAmount}</div>` : ''}
+    </div>
+    <div class="tp-dash">${dash}</div>
+
+    <div class="tp-footer">
+      <div style="font-weight:bold;">*** THANK YOU FOR YOUR VISIT ***</div>
+      <div style="margin-top:4px;font-size:10px;">Powered by Pizzatta Cafe POS</div>
+      <div class="tp-barcode">||| |||| || ||||| ||| ||||</div>
+    </div>
+  `;
+
+  cyberClick();
+  openModal('thermalReceiptModal');
+}
+
+function printThermalReceipt() {
+  const paper = document.getElementById('thermalPaperContent');
+  if (!paper) return;
+  const win = window.open('', '', 'width=400,height=600');
+  win.document.write(`
+    <html><head><title>Receipt #${currentThermalOrder?.id}</title>
+    <style>
+      body { font-family: monospace; font-size: 12px; margin: 10px; width: 280px; }
+      .tp-header { text-align: center; font-weight: bold; }
+      .tp-logo { font-size: 16px; margin-bottom: 4px; }
+      .tp-dash { text-align: center; margin: 6px 0; }
+      .tp-table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11px; }
+      .tp-totals { margin-top: 6px; }
+      .tp-total-row { display: flex; justify-content: space-between; margin: 3px 0; }
+      .tp-total-row.grand { font-size: 14px; font-weight: bold; }
+      .tp-footer { text-align: center; margin-top: 12px; font-size: 10px; }
+      .tp-barcode { letter-spacing: 3px; margin-top: 6px; font-size: 14px; }
+    </style>
+    </head><body>${paper.innerHTML}</body></html>
+  `);
+  win.document.close();
+  win.focus();
+  win.print();
+  win.close();
+}
+
+// =============================================
+// DISCOUNT APPLIER MODAL
+// =============================================
+let currentDiscOrder = null;
+let discType = 'percent';
+
+function openDiscountModal(orderId) {
+  const o = orders.find(x => String(x.id) === String(orderId));
+  if (!o) return;
+  currentDiscOrder = o;
+  document.getElementById('discountOrderId').value = orderId;
+  document.getElementById('discountOrderInfo').textContent = `Order #${String(o.id).padStart(3,'0')} — ${o.customer}`;
+  document.getElementById('discountValInput').value = o.discount ? o.discount.val : '';
+  discType = o.discount ? o.discount.type : 'percent';
+  updateDiscTypeButtons();
+  calcDiscountPreview();
+  openModal('discountModal');
+}
+
+function setDiscountType(type) {
+  discType = type;
+  updateDiscTypeButtons();
+  calcDiscountPreview();
+}
+
+function updateDiscTypeButtons() {
+  const pBtn = document.getElementById('discTypePctBtn');
+  const fBtn = document.getElementById('discTypeFlatBtn');
+  if (pBtn && fBtn) {
+    pBtn.classList.toggle('active', discType === 'percent');
+    fBtn.classList.toggle('active', discType === 'flat');
+  }
+}
+
+function setDiscPreset(val) {
+  document.getElementById('discountValInput').value = val;
+  calcDiscountPreview();
+}
+
+function calcDiscountPreview() {
+  if (!currentDiscOrder) return;
+  const val = parseFloat(document.getElementById('discountValInput').value || 0);
+  const orig = currentDiscOrder.items.reduce((s, it) => {
+    const m = menuItems.find(x => x.id === it.menuId);
+    return s + (it.unitPrice || (m ? m.price : 0)) * it.qty;
+  }, 0) || currentDiscOrder.total;
+
+  let savings = 0;
+  if (discType === 'percent') {
+    savings = Math.round(orig * (val / 100));
+  } else {
+    savings = val;
+  }
+  savings = Math.min(orig, Math.max(0, savings));
+  const finalTotal = Math.max(0, orig - savings);
+
+  const origEl = document.getElementById('discOrigTotal');
+  const savEl = document.getElementById('discSavingsAmount');
+  const finEl = document.getElementById('discFinalTotal');
+  if (origEl) origEl.textContent = `₹${orig}`;
+  if (savEl) savEl.textContent = `-₹${savings}`;
+  if (finEl) finEl.textContent = `₹${finalTotal}`;
+}
+
+async function applyDiscountToOrder() {
+  if (!currentDiscOrder) return;
+  const val = parseFloat(document.getElementById('discountValInput').value || 0);
+  const orig = currentDiscOrder.items.reduce((s, it) => {
+    const m = menuItems.find(x => x.id === it.menuId);
+    return s + (it.unitPrice || (m ? m.price : 0)) * it.qty;
+  }, 0) || currentDiscOrder.total;
+
+  let savings = 0;
+  if (discType === 'percent') savings = Math.round(orig * (val / 100));
+  else savings = val;
+  savings = Math.min(orig, Math.max(0, savings));
+
+  if (val > 0) {
+    currentDiscOrder.discount = {
+      type: discType,
+      val,
+      savings,
+      label: discType === 'percent' ? `${val}% OFF` : `₹${val} OFF`
+    };
+    currentDiscOrder.total = orig - savings;
+  } else {
+    delete currentDiscOrder.discount;
+    currentDiscOrder.total = orig;
+  }
+
+  await saveData();
+  cyberSuccess();
+  closeModal('discountModal');
+  showToast(`🏷️ Discount applied to Order #${currentDiscOrder.id}!`);
+  if (currentPage === 'dashboard') renderDashboard();
+  if (currentPage === 'orders') renderOrders();
+}
+
+// =============================================
+// END OF DAY (EOD) SUMMARY REPORT
+// =============================================
+function openEodReport() {
+  const today = getTodayIST();
+  const list = orders.filter(o => o.date === today);
+  const totalRev = list.reduce((s,o) => s + o.total, 0);
+  const totalPaid = list.filter(o => o.paid).reduce((s,o) => s + o.total, 0);
+  const pendingDel = list.filter(o => !o.delivered).length;
+  const cashTotal = list.reduce((s,o) => s + (o.cashAmount || (o.payMode==='cash'?o.total:0)), 0);
+  const onlineTotal = list.reduce((s,o) => s + (o.onlineAmount || (o.payMode==='online'?o.total:0)), 0);
+  const avgOrder = list.length ? Math.round(totalRev / list.length) : 0;
+
+  const body = document.getElementById('eodReportBody');
+  if (!body) return;
+
+  body.innerHTML = `
+    <div style="padding:4px 0;">
+      <div class="eod-date-header">DATE: <strong>${today}</strong> · SHIFT REPORT</div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0;">
+        <div class="kpi-card" style="padding:12px;"><div class="kpi-label">TOTAL REVENUE</div><div class="kpi-value" style="font-size:20px;">₹${totalRev.toLocaleString('en-IN')}</div></div>
+        <div class="kpi-card success" style="padding:12px;"><div class="kpi-label">TOTAL ORDERS</div><div class="kpi-value" style="font-size:20px;">${list.length}</div></div>
+        <div class="kpi-card warning" style="padding:12px;"><div class="kpi-label">AVG TICKET SIZE</div><div class="kpi-value" style="font-size:20px;">₹${avgOrder}</div></div>
+        <div class="kpi-card danger" style="padding:12px;"><div class="kpi-label">PENDING DELIVERIES</div><div class="kpi-value" style="font-size:20px;">${pendingDel}</div></div>
+      </div>
+      <div class="split-result-box" style="margin-top:12px;">
+        <div class="split-result-row"><span>💵 Cash Received</span><span style="color:var(--success)">₹${cashTotal.toLocaleString('en-IN')}</span></div>
+        <div class="split-result-row"><span>📱 Online / UPI Received</span><span style="color:var(--primary)">₹${onlineTotal.toLocaleString('en-IN')}</span></div>
+        <div class="split-result-row split-total"><span>Total Collected</span><span>₹${(cashTotal + onlineTotal).toLocaleString('en-IN')}</span></div>
+      </div>
+    </div>
+  `;
+
+  cyberClick();
+  openModal('eodModal');
+}
+
+async function downloadEodReport() {
+  const today = getTodayIST();
+  const list = orders.filter(o => o.date === today);
+  const totalRev = list.reduce((s,o) => s + o.total, 0);
+
+  let txt = `====================================================\n`;
+  txt += `            PIZZACAFE — END OF DAY REPORT           \n`;
+  txt += `            DATE: ${today}                          \n`;
+  txt += `====================================================\n`;
+  txt += `TOTAL ORDERS  : ${list.length}\n`;
+  txt += `TOTAL REVENUE : Rs. ${totalRev}\n`;
+  txt += `====================================================\n`;
+
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `EOD_Report_${today}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('📊 EOD Report downloaded!');
+}
+
+// =============================================
+// BATCH ACTION OPERATIONS
+// =============================================
+function updateBatchBar() {
+  const chks = document.querySelectorAll('.order-batch-chk:checked');
+  const bar = document.getElementById('batchActionBar');
+  const badge = document.getElementById('batchCountBadge');
+  if (!bar || !badge) return;
+
+  if (chks.length > 0) {
+    badge.textContent = chks.length;
+    bar.classList.add('active');
+  } else {
+    bar.classList.remove('active');
+  }
+}
+
+function toggleSelectAllOrders(mainChkBx) {
+  const chks = document.querySelectorAll('.order-batch-chk');
+  chks.forEach(c => c.checked = mainChkBx.checked);
+  updateBatchBar();
+}
+
+function clearBatchSelection() {
+  const chks = document.querySelectorAll('.order-batch-chk');
+  chks.forEach(c => c.checked = false);
+  const main = document.getElementById('selectAllChkBx');
+  if (main) main.checked = false;
+  updateBatchBar();
+}
+
+function getSelectedOrderIds() {
+  const chks = document.querySelectorAll('.order-batch-chk:checked');
+  return Array.from(chks).map(c => c.value);
+}
+
+async function batchMarkPaid() {
+  const ids = getSelectedOrderIds();
+  if (!ids.length) return;
+  orders.forEach(o => {
+    if (ids.includes(String(o.id))) o.paid = true;
+  });
+  await saveData();
+  clearBatchSelection();
+  cyberSuccess();
+  showToast(`✓ ${ids.length} orders marked as PAID!`);
+  renderOrders();
+}
+
+async function batchMarkDelivered() {
+  const ids = getSelectedOrderIds();
+  if (!ids.length) return;
+  orders.forEach(o => {
+    if (ids.includes(String(o.id))) o.delivered = true;
+  });
+  await saveData();
+  clearBatchSelection();
+  cyberSuccess();
+  showToast(`🛵 ${ids.length} orders marked as DELIVERED!`);
+  renderOrders();
+}
+
+async function batchDeleteOrders() {
+  const ids = getSelectedOrderIds();
+  if (!ids.length) return;
+  if (!confirm(`Delete ${ids.length} selected orders?`)) return;
+  orders = orders.filter(o => !ids.includes(String(o.id)));
+  await saveData();
+  clearBatchSelection();
+  cyberAlert();
+  showToast(`🗑️ ${ids.length} orders deleted!`);
+  renderOrders();
+}
+
+
+// =============================================
+// AI VOICE ASSISTANT ENGINE (Speech Recognition)
+// =============================================
+let recognition = null;
+let isAiVoiceListening = false;
+
+function initAiVoiceEngine() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    console.warn("Speech Recognition API not supported in this browser.");
+    return false;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onstart = () => {
+    isAiVoiceListening = true;
+    updateAiVoiceUI(true);
+    cyberSuccess();
+    showToast('🎙️ AI Voice Assistant ONLINE! Speak commands now...');
+  };
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    let final = '';
+
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        final += event.results[i][0].transcript;
+      } else {
+        interim += event.results[i][0].transcript;
+      }
+    }
+
+    const txt = final || interim;
+    const bar = document.getElementById('aiVoiceTranscript');
+    if (bar && txt) bar.textContent = `🎙️ AI HEARD: "${txt.toUpperCase()}"`;
+
+    if (final) {
+      processAiVoiceCommand(final.toLowerCase());
+    }
+  };
+
+  recognition.onerror = (event) => {
+    console.warn("AI Voice Error:", event.error);
+    if (event.error === 'not-allowed') {
+      showToast('⚠️ Microphone permission required for AI Voice', 'error');
+      stopAiVoice();
+    }
+  };
+
+  recognition.onend = () => {
+    if (isAiVoiceListening) {
+      try { recognition.start(); } catch(e) {}
+    } else {
+      updateAiVoiceUI(false);
+    }
+  };
+
+  return true;
+}
+
+function toggleAiVoice() {
+  if (isAiVoiceListening) {
+    stopAiVoice();
+  } else {
+    startAiVoice();
+  }
+}
+
+function startAiVoice() {
+  if (!recognition) {
+    const ok = initAiVoiceEngine();
+    if (!ok) {
+      showToast('Speech Recognition not supported in this browser. Try Chrome/Edge!', 'error');
+      return;
+    }
+  }
+  try {
+    recognition.start();
+  } catch(e) {
+    isAiVoiceListening = true;
+    updateAiVoiceUI(true);
+  }
+}
+
+function stopAiVoice() {
+  isAiVoiceListening = false;
+  if (recognition) {
+    try { recognition.stop(); } catch(e) {}
+  }
+  updateAiVoiceUI(false);
+  showToast('🔇 AI Voice Assistant Offline');
+}
+
+function updateAiVoiceUI(listening) {
+  const btn = document.getElementById('aiVoiceBtn');
+  const bar = document.getElementById('aiVoiceStatusBar');
+  if (btn) btn.classList.toggle('listening', listening);
+  if (bar) bar.classList.toggle('active', listening);
+}
+
+function processAiVoiceCommand(cmd) {
+  cmd = cmd.trim();
+  console.log("Processing AI Voice Command:", cmd);
+
+  // Navigation commands
+  if (cmd.includes('dashboard') || cmd.includes('command deck')) { navigate('dashboard'); showToast('🤖 AI: Navigating to Dashboard'); return; }
+  if (cmd.includes('orders') || cmd.includes('sector orders')) { navigate('orders'); showToast('🤖 AI: Navigating to Orders'); return; }
+  if (cmd.includes('kitchen') || cmd.includes('kds')) { navigate('kds'); showToast('🤖 AI: Navigating to Kitchen KDS'); return; }
+  if (cmd.includes('menu')) { navigate('menu'); showToast('🤖 AI: Navigating to Menu Manager'); return; }
+  if (cmd.includes('analytics') || cmd.includes('telemetry')) { navigate('analytics'); showToast('🤖 AI: Navigating to Analytics'); return; }
+
+  // Action commands
+  if (cmd.includes('lock portal') || cmd.includes('lock')) { lockPortal(); showToast('🤖 AI: Locking Portal'); return; }
+  if (cmd.includes('pos') || cmd.includes('quick pos')) { openPosModal(); showToast('🤖 AI: Opening POS Synthesizer'); return; }
+  if (cmd.includes('new order')) { openNewOrderModal(); showToast('🤖 AI: Opening New Order Modal'); return; }
+  if (cmd.includes('search') || cmd.includes('find')) { openGlobalSearch(); showToast('🤖 AI: Opening Search'); return; }
+  if (cmd.includes('toggle audio') || cmd.includes('audio')) { toggleCyberAudio(); return; }
+
+  // Parser order command (e.g., "2 paneer pizza for Amit")
+  if (cmd.includes('for ') || cmd.includes('order') || cmd.includes('add')) {
+    openAiParserModal();
+    const input = document.getElementById('aiParserInput');
+    if (input) {
+      input.value = cmd;
+      parseAiOrderText();
+      showToast('🤖 AI: Order parsed from voice command!');
+    }
+  }
+}
+
+// =============================================
+// AI NATURAL LANGUAGE ORDER PARSER ENGINE
+// =============================================
+let parsedAiOrder = null;
+
+function openAiParserModal() {
+  cyberClick();
+  parsedAiOrder = null;
+  const input = document.getElementById('aiParserInput');
+  const preview = document.getElementById('aiParsedPreview');
+  const btn = document.getElementById('btnSubmitAiOrder');
+  if (input) input.value = '';
+  if (preview) preview.innerHTML = `<div class="ai-parsed-empty">Start typing above to see AI live parsing...</div>`;
+  if (btn) btn.disabled = true;
+  openModal('aiParserModal');
+}
+
+function setAiParserExample(str) {
+  const input = document.getElementById('aiParserInput');
+  if (input) {
+    input.value = str;
+    parseAiOrderText();
+  }
+}
+
+function parseAiOrderText() {
+  const text = (document.getElementById('aiParserInput')?.value || '').trim();
+  const preview = document.getElementById('aiParsedPreview');
+  const btn = document.getElementById('btnSubmitAiOrder');
+  if (!preview) return;
+
+  if (!text || text.length < 3) {
+    preview.innerHTML = `<div class="ai-parsed-empty">Start typing above to see AI live parsing...</div>`;
+    if (btn) btn.disabled = true;
+    parsedAiOrder = null;
+    return;
+  }
+
+  // Extract Customer Name ("for Rahul" / "customer Priya")
+  let customer = 'Walk-in Customer';
+  const custMatch = text.match(/(?:for|customer)\s+([A-Za-z\s]+?)(?:\s+\d+|\s+note|\s+with|$)/i) || text.match(/for\s+([A-Za-z\s]+)/i);
+  if (custMatch && custMatch[1].trim()) {
+    customer = custMatch[1].trim();
+  }
+
+  // Extract Phone number (10 digit pattern)
+  let phone = '';
+  const phoneMatch = text.match(/\b([6-9]\d{9})\b/);
+  if (phoneMatch) {
+    phone = phoneMatch[1];
+  }
+
+  // Extract Note ("note extra spicy")
+  let note = '';
+  const noteMatch = text.match(/note\s+(.+)$/i);
+  if (noteMatch) {
+    note = noteMatch[1].trim();
+  }
+
+  // Extract items using fuzzy name matching
+  const matchedItems = [];
+  menuItems.forEach(item => {
+    const itemNameLower = item.name.toLowerCase();
+    const cleanName = itemNameLower.replace(/[^a-z0-9\s]/g, '');
+    const tokens = cleanName.split(' ').filter(w => w.length > 3);
+    
+    let isMatch = text.toLowerCase().includes(cleanName);
+    if (!isMatch && tokens.length) {
+      isMatch = tokens.every(t => text.toLowerCase().includes(t));
+    }
+
+    if (isMatch) {
+      let qty = 1;
+      const escapedName = item.name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const qtyRegex = new RegExp(`(\\d+)\\s*(?:x|pcs|node|nodes|piece)?\\s*${escapedName.slice(0, 8)}`, 'i');
+      const m = text.match(qtyRegex);
+      if (m) {
+        qty = parseInt(m[1]) || 1;
+      }
+      matchedItems.push({ menuId: item.id, qty, unitPrice: item.price, name: item.name });
+    }
+  });
+
+  if (!matchedItems.length) {
+    preview.innerHTML = `<div class="ai-parsed-empty" style="color:var(--warning)">⚠️ AI searching menu... No exact menu items matched yet. Try specifying item names!</div>`;
+    if (btn) btn.disabled = true;
+    parsedAiOrder = null;
+    return;
+  }
+
+  const total = matchedItems.reduce((s, it) => s + (it.qty * it.unitPrice), 0);
+  parsedAiOrder = { customer, phone, items: matchedItems, total, note };
+
+  const itemsListHtml = matchedItems.map(it => `
+    <div class="ai-parsed-item-row">
+      <span><strong>${it.qty}×</strong> ${it.name}</span>
+      <span>₹${it.qty * it.unitPrice}</span>
+    </div>
+  `).join('');
+
+  preview.innerHTML = `
+    <div class="ai-parsed-card">
+      <div class="ai-parsed-header">
+        <span>👤 CUSTOMER: <strong>${customer}</strong> ${phone ? `(📞 ${phone})` : ''}</span>
+        <span class="ai-confidence-badge">✨ 98% AI CONFIDENCE</span>
+      </div>
+      <div class="ai-parsed-items">${itemsListHtml}</div>
+      ${note ? `<div class="ai-parsed-note">📝 NOTE: ${note}</div>` : ''}
+      <div class="ai-parsed-total-row">
+        <span>ESTIMATED TOTAL</span>
+        <span style="color:var(--success);font-size:18px;">₹${total}</span>
+      </div>
+    </div>
+  `;
+
+  if (btn) btn.disabled = false;
+}
+
+async function submitAiParsedOrder() {
+  if (!parsedAiOrder || !parsedAiOrder.items.length) return;
+
+  const now = new Date();
+  const hr = now.getHours(), mn = now.getMinutes();
+  const ampm = hr >= 12 ? 'PM' : 'AM';
+  const h12 = hr % 12 || 12;
+  const timeStr = `${h12}:${String(mn).padStart(2,'0')} ${ampm}`;
+
+  const newOrder = {
+    id: nextOrderId++,
+    customer: parsedAiOrder.customer,
+    phone: parsedAiOrder.phone || '',
+    ready: false,
+    items: parsedAiOrder.items.map(it => ({ menuId: it.menuId, qty: it.qty, unitPrice: it.unitPrice })),
+    total: parsedAiOrder.total,
+    type: 'dine-in',
+    date: getTodayIST(),
+    time: timeStr,
+    paid: false,
+    delivered: false,
+    payMode: 'cash',
+    cashAmount: 0,
+    onlineAmount: 0,
+    note: parsedAiOrder.note || ''
+  };
+
+  orders.push(newOrder);
+  await saveData();
+  cyberSuccess();
+  closeModal('aiParserModal');
+  showToast(`⚡ AI Parsed Order #${newOrder.id} created for ${newOrder.customer}!`);
+  addNotification(`✨ AI Parsed Order #${newOrder.id} (${newOrder.customer}) created`, 'order');
+
+  if (currentPage === 'dashboard') renderDashboard();
+  if (currentPage === 'orders') renderOrders();
+  if (currentPage === 'kds') renderKds(kdsFilter);
+}
+

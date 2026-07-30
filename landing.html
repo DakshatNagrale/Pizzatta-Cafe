@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEXUS-7 CYBER CAFÉ — Quantum Telemetry Portal</title>
+  <meta name="description" content="NEXUS-7 Cyber Cafe Staff Portal — Next-gen orbital cafe telemetry & quantum pizza synthesizer." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Share+Tech+Mono&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+  <style>
+    /* =========================================================
+       NEXUS-7 CYBER CAFÉ — SCI-FI LAUNCH PORTAL
+       Designed with StitchMCP: CyberSynth Sci-Fi HUD System
+       ========================================================= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-void: #030712;
+      --bg: #050d1a;
+      --surface: rgba(8, 16, 32, 0.8);
+      --surface-low: #040914;
+      --surface-high: #0d1b32;
+      --surface-highest: #152746;
+      --primary: #00F3FF;
+      --primary-light: #4DF6FF;
+      --primary-dim: rgba(0, 243, 255, 0.15);
+      --primary-glow: rgba(0, 243, 255, 0.65);
+      --primary-glow-intense: rgba(0, 243, 255, 0.95);
+      --secondary: #FF007F;
+      --tertiary: #9D00FF;
+      --text: #E0F7FF;
+      --text-muted: #7DAEC3;
+      --text-dim: #3B5B6D;
+      --outline: rgba(0, 243, 255, 0.3);
+      --font-display: 'Orbitron', sans-serif;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-body: 'Space Grotesk', sans-serif;
+    }
+
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg-void);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      cursor: default;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ---- GRID PATTERN OVERLAY ---- */
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,107,43,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,107,43,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* ---- NOISE TEXTURE ---- */
+    .noise-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0.04;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E");
+      background-size: 200px;
+    }
+
+    /* ---- LANDING WRAPPER ---- */
+    .landing-wrapper {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+    }
+    .landing-wrapper.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* ---- WEBGL SHADER CANVAS ---- */
+    #ember-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      mix-blend-mode: screen;
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ---- VIGNETTE ---- */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 20%, rgba(3,3,3,0.4) 60%, rgba(3,3,3,0.95) 100%);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* ---- RADIAL AURA behind logo ---- */
+    .aura-glow {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -60%);
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,107,43,0.12) 0%, rgba(255,107,43,0.04) 40%, transparent 70%);
+      filter: blur(40px);
+      z-index: 4;
+      pointer-events: none;
+      animation: auraPulse 4s ease-in-out infinite;
+    }
+    @keyframes auraPulse {
+      0%, 100% { transform: translate(-50%, -60%) scale(1); opacity: 0.8; }
+      50% { transform: translate(-50%, -60%) scale(1.15); opacity: 1; }
+    }
+
+    /* ---- SCAN LINE ---- */
+    .scan-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 5%, rgba(255,107,43,0.15) 30%, rgba(255,107,43,0.25) 50%, rgba(255,107,43,0.15) 70%, transparent 95%);
+      z-index: 5;
+      animation: scanMove 5s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes scanMove {
+      0% { top: -2px; opacity: 0; }
+      5% { opacity: 1; }
+      95% { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    /* ---- CORNER BRACKETS ---- */
+    .corner-bracket {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-color: rgba(255, 107, 43, 0.25);
+      border-style: solid;
+      z-index: 10;
+      opacity: 0;
+      animation: fadeInCorner 1.2s ease-out forwards;
+      transition: border-color 0.5s ease, box-shadow 0.5s ease;
+    }
+    .corner-bracket:hover {
+      border-color: rgba(255, 107, 43, 0.7);
+      filter: drop-shadow(0 0 8px rgba(255,107,43,0.3));
+    }
+    .corner-tl { top: 28px; left: 28px; border-width: 2px 0 0 2px; animation-delay: 0.4s; }
+    .corner-tr { top: 28px; right: 28px; border-width: 2px 2px 0 0; animation-delay: 0.6s; }
+    .corner-bl { bottom: 28px; left: 28px; border-width: 0 0 2px 2px; animation-delay: 0.8s; }
+    .corner-br { bottom: 28px; right: 28px; border-width: 0 2px 2px 0; animation-delay: 1.0s; }
+    /* Inner brackets for extra depth */
+    .corner-bracket-inner {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-color: rgba(255, 107, 43, 0.12);
+      border-style: solid;
+      z-index: 10;
+      opacity: 0;
+      animation: fadeInCorner 1.2s ease-out forwards;
+    }
+    .corner-tl-inner { top: 36px; left: 36px; border-width: 1px 0 0 1px; animation-delay: 1.2s; }
+    .corner-tr-inner { top: 36px; right: 36px; border-width: 1px 1px 0 0; animation-delay: 1.3s; }
+    .corner-bl-inner { bottom: 36px; left: 36px; border-width: 0 0 1px 1px; animation-delay: 1.4s; }
+    .corner-br-inner { bottom: 36px; right: 36px; border-width: 0 1px 1px 0; animation-delay: 1.5s; }
+
+    @keyframes fadeInCorner {
+      0% { opacity: 0; transform: scale(0.3); }
+      60% { opacity: 1; }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* ---- FLOATING EMBERS (CSS particles) ---- */
+    .ember {
+      position: absolute;
+      border-radius: 50%;
+      z-index: 4;
+      pointer-events: none;
+      animation: emberFloat linear infinite;
+    }
+    @keyframes emberFloat {
+      0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 0.6; }
+      100% { transform: translateY(-100vh) translateX(var(--drift)) scale(0.3); opacity: 0; }
+    }
+
+    /* ---- MAIN CONTENT ---- */
+    .landing-content {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      max-width: 800px;
+      padding: 0 24px;
+    }
+
+    /* ---- LOGO ICON ---- */
+    .logo-container {
+      position: relative;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: heroReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+    }
+    .logo-icon {
+      font-size: 110px;
+      line-height: 1;
+      filter: drop-shadow(0 0 25px rgba(255,107,43,0.5));
+      animation: logoFloat 4s ease-in-out infinite;
+      display: block;
+    }
+    .logo-ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 160px; height: 160px;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(255,107,43,0.15);
+      border-radius: 50%;
+      animation: ringPulse 3s ease-in-out infinite;
+    }
+    .logo-ring-2 {
+      width: 200px; height: 200px;
+      border-color: rgba(255,107,43,0.08);
+      animation-delay: 0.5s;
+      animation-duration: 4s;
+    }
+
+    @keyframes logoFloat {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+        filter: drop-shadow(0 0 20px rgba(255,107,43,0.4));
+      }
+      50% {
+        transform: translateY(-16px) rotate(8deg);
+        filter: drop-shadow(0 0 45px rgba(255,107,43,0.8));
+      }
+    }
+    @keyframes ringPulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+      50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+    }
+
+    /* ---- BRAND NAME ---- */
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 92px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      color: var(--primary);
+      text-shadow:
+        0 0 40px rgba(255,107,43,0.5),
+        0 0 100px rgba(255,107,43,0.2),
+        0 4px 20px rgba(0,0,0,0.8);
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 4px;
+      opacity: 0;
+      animation: heroReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards, titleGlow 3s ease-in-out 2s infinite;
+    }
+    @keyframes titleGlow {
+      0%, 100% { text-shadow: 0 0 40px rgba(255,107,43,0.4), 0 0 80px rgba(255,107,43,0.15), 0 4px 20px rgba(0,0,0,0.8); }
+      50% { text-shadow: 0 0 60px rgba(255,107,43,0.7), 0 0 120px rgba(255,107,43,0.3), 0 4px 20px rgba(0,0,0,0.8); }
+    }
+
+    .brand-subtitle {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 300;
+      letter-spacing: 18px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: heroReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.7s forwards;
+      text-indent: 18px; /* compensate for letter-spacing centering */
+    }
+
+    /* ---- DECORATIVE DIVIDER ---- */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      opacity: 0;
+      animation: heroReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
+    }
+    .divider-line {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,107,43,0.4), transparent);
+    }
+    .divider-diamond {
+      width: 8px;
+      height: 8px;
+      background: var(--primary);
+      transform: rotate(45deg);
+      box-shadow: 0 0 10px rgba(255,107,43,0.5);
+      animation: diamondPulse 2s ease-in-out infinite;
+    }
+    @keyframes diamondPulse {
+      0%, 100% { box-shadow: 0 0 8px rgba(255,107,43,0.4); transform: rotate(45deg) scale(1); }
+      50% { box-shadow: 0 0 16px rgba(255,107,43,0.8); transform: rotate(45deg) scale(1.2); }
+    }
+
+    /* ---- TAGLINE ---- */
+    .tagline {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 52px;
+      opacity: 0;
+      animation: heroReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 1.1s forwards;
+    }
+
+    /* ---- CTA BUTTON ---- */
+    .cta-wrapper {
+      opacity: 0;
+      animation: heroReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 1.3s forwards;
+    }
+
+    .cta-glass {
+      padding: 5px;
+      border-radius: 100px;
+      background: rgba(30, 30, 30, 0.25);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 107, 43, 0.15);
+      box-shadow:
+        0 0 60px rgba(255,107,43,0.08),
+        0 0 120px rgba(255,107,43,0.04),
+        inset 0 0 30px rgba(255,107,43,0.03);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: glassBreath 3s ease-in-out infinite;
+    }
+    .cta-glass:hover {
+      border-color: rgba(255, 107, 43, 0.5);
+      box-shadow:
+        0 0 80px rgba(255,107,43,0.2),
+        0 0 160px rgba(255,107,43,0.1),
+        inset 0 0 40px rgba(255,107,43,0.06);
+    }
+    @keyframes glassBreath {
+      0%, 100% { box-shadow: 0 0 50px rgba(255,107,43,0.06), 0 0 100px rgba(255,107,43,0.03); }
+      50% { box-shadow: 0 0 70px rgba(255,107,43,0.12), 0 0 140px rgba(255,107,43,0.06); }
+    }
+
+    .launch-btn {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 22px 64px;
+      border: none;
+      border-radius: 100px;
+      background: linear-gradient(135deg, #ff6b2b 0%, #ff8c52 40%, #ff6b2b 80%, #e85a1e 100%);
+      background-size: 300% 300%;
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow:
+        0 0 40px rgba(255,107,43,0.35),
+        0 8px 32px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+      animation: gradientFlow 4s ease-in-out infinite, btnPulse 2.5s ease-in-out infinite alternate;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+    .launch-btn:hover {
+      transform: scale(1.06) translateY(-3px);
+      box-shadow:
+        0 0 70px rgba(255,107,43,0.5),
+        0 12px 40px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+    .launch-btn:active {
+      transform: scale(0.96);
+      transition-duration: 0.1s;
+    }
+    .launch-btn .material-symbols-outlined {
+      font-size: 26px;
+      font-variation-settings: 'FILL' 1, 'wght' 600;
+    }
+
+    /* Shimmer sweep */
+    .launch-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -120%;
+      width: 80%; height: 100%;
+      background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+      animation: shimmerSweep 3.5s ease-in-out infinite;
+      z-index: 1;
+    }
+    /* Inner glow ring */
+    .launch-btn::after {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      border-radius: 100px;
+      border: 1px solid rgba(255,255,255,0.15);
+      pointer-events: none;
+    }
+
+    @keyframes shimmerSweep {
+      0% { left: -120%; }
+      35% { left: 120%; }
+      100% { left: 120%; }
+    }
+    @keyframes gradientFlow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    @keyframes btnPulse {
+      0% { box-shadow: 0 0 30px rgba(255,107,43,0.25), 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2); }
+      100% { box-shadow: 0 0 55px rgba(255,107,43,0.5), 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2); }
+    }
+
+    /* ---- BOTTOM INFO ---- */
+    .bottom-info {
+      position: absolute;
+      bottom: 24px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      animation: heroReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 1.6s forwards;
+    }
+    .version-badge {
+      padding: 5px 16px;
+      border-radius: 100px;
+      background: rgba(14, 14, 14, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(89, 65, 56, 0.3);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .address-text {
+      font-size: 9px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(89, 65, 56, 0.5);
+    }
+
+    /* ---- HERO REVEAL ANIMATION ---- */
+    @keyframes heroReveal {
+      0% { opacity: 0; transform: translateY(50px) scale(0.95); filter: blur(8px); }
+      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+
+    /* =============================================
+       PORTAL TRANSITION EFFECTS (KHATARNAK!)
+       ============================================= */
+
+    /* Radial blast rings */
+    .portal-blast {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .portal-blast.active { opacity: 1; }
+
+    .portal-ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 0; height: 0;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .portal-ring.ring-1 {
+      background: radial-gradient(circle, rgba(255,107,43,0.9) 0%, rgba(255,107,43,0) 70%);
+      animation: expandRing 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    }
+    .portal-ring.ring-2 {
+      background: radial-gradient(circle, rgba(255,140,82,0.6) 0%, rgba(255,140,82,0) 70%);
+      animation: expandRing 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.12s forwards;
+    }
+    .portal-ring.ring-3 {
+      background: radial-gradient(circle, rgba(255,219,206,0.5) 0%, rgba(255,219,206,0) 70%);
+      animation: expandRing 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.25s forwards;
+    }
+    .portal-ring.ring-4 {
+      background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 60%);
+      animation: expandRing 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s forwards;
+    }
+
+    @keyframes expandRing {
+      0% { width: 0; height: 0; opacity: 1; }
+      60% { opacity: 0.7; }
+      100% { width: 350vmax; height: 350vmax; opacity: 0; }
+    }
+
+    /* White flash */
+    .portal-flash {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .portal-flash.active {
+      animation: flashBang 1s ease-out 0.5s forwards;
+    }
+    @keyframes flashBang {
+      0% { opacity: 0; }
+      15% { opacity: 0.95; }
+      100% { opacity: 0; }
+    }
+
+    /* Explosion particles */
+    .explosion-particle {
+      position: fixed;
+      z-index: 100001;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: particleFly var(--duration) ease-out forwards;
+    }
+    @keyframes particleFly {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
+    }
+
+    /* Trail particles (longer trails) */
+    .trail-particle {
+      position: fixed;
+      z-index: 100001;
+      width: 2px;
+      border-radius: 2px;
+      pointer-events: none;
+      animation: trailFly var(--duration) ease-out forwards;
+    }
+    @keyframes trailFly {
+      0% { opacity: 1; transform: translate(0, 0) scaleY(1) rotate(var(--angle)); }
+      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scaleY(3) rotate(var(--angle)); }
+    }
+
+    /* Screen shake */
+    @keyframes screenShake {
+      0%, 100% { transform: translate(0, 0) rotate(0); }
+      10% { transform: translate(-5px, 3px) rotate(-0.3deg); }
+      20% { transform: translate(4px, -4px) rotate(0.3deg); }
+      30% { transform: translate(-3px, 5px) rotate(-0.2deg); }
+      40% { transform: translate(5px, -2px) rotate(0.2deg); }
+      50% { transform: translate(-4px, 4px) rotate(-0.1deg); }
+      60% { transform: translate(3px, -5px) rotate(0.1deg); }
+      70% { transform: translate(-5px, 2px); }
+      80% { transform: translate(4px, 3px); }
+      90% { transform: translate(-2px, -4px); }
+    }
+    .screen-shake { animation: screenShake 0.6s ease-out; }
+
+    /* Zoom-out dissolve on landing content */
+    .landing-content.dissolving {
+      animation: dissolveOut 0.8s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+    }
+    @keyframes dissolveOut {
+      0% { opacity: 1; transform: scale(1); filter: blur(0); }
+      100% { opacity: 0; transform: scale(1.3); filter: blur(12px); }
+    }
+
+    /* ---- HORIZONTAL ENERGY LINES ---- */
+    .energy-line {
+      position: absolute;
+      height: 1px;
+      z-index: 4;
+      pointer-events: none;
+      opacity: 0;
+      animation: energyLineAnim 6s linear infinite;
+    }
+    @keyframes energyLineAnim {
+      0% { left: -200px; opacity: 0; }
+      10% { opacity: 0.4; }
+      90% { opacity: 0.4; }
+      100% { left: calc(100% + 200px); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Grid + Noise overlays -->
+  <div class="grid-overlay"></div>
+  <div class="noise-overlay"></div>
+
+  <!-- ============ LANDING PAGE ============ -->
+  <div class="landing-wrapper" id="landingPage">
+
+    <!-- WebGL Ember Shader Background -->
+    <canvas id="ember-canvas"></canvas>
+
+    <!-- Vignette -->
+    <div class="vignette"></div>
+
+    <!-- Radial Aura Glow -->
+    <div class="aura-glow"></div>
+
+    <!-- Scanning Line -->
+    <div class="scan-line"></div>
+
+    <!-- Energy Lines -->
+    <div class="energy-line" style="top:20%;width:300px;background:linear-gradient(90deg,transparent,rgba(255,107,43,0.2),transparent);animation-delay:0s;animation-duration:7s;"></div>
+    <div class="energy-line" style="top:75%;width:250px;background:linear-gradient(90deg,transparent,rgba(255,107,43,0.15),transparent);animation-delay:3s;animation-duration:8s;"></div>
+    <div class="energy-line" style="top:45%;width:350px;background:linear-gradient(90deg,transparent,rgba(255,107,43,0.1),transparent);animation-delay:5s;animation-duration:9s;"></div>
+
+    <!-- Corner Brackets (outer) -->
+    <div class="corner-bracket corner-tl"></div>
+    <div class="corner-bracket corner-tr"></div>
+    <div class="corner-bracket corner-bl"></div>
+    <div class="corner-bracket corner-br"></div>
+    <!-- Corner Brackets (inner) -->
+    <div class="corner-bracket-inner corner-tl-inner"></div>
+    <div class="corner-bracket-inner corner-tr-inner"></div>
+    <div class="corner-bracket-inner corner-bl-inner"></div>
+    <div class="corner-bracket-inner corner-br-inner"></div>
+
+    <!-- Main Content -->
+    <div class="landing-content" id="landingContent">
+      <!-- Logo with Rings -->
+      <div class="logo-container">
+        <div class="logo-ring"></div>
+        <div class="logo-ring logo-ring-2"></div>
+        <span class="logo-icon">🍕</span>
+      </div>
+
+      <!-- Brand -->
+      <h1 class="brand-title">Pizzatta</h1>
+      <h2 class="brand-subtitle">Cafe</h2>
+
+      <!-- Divider -->
+      <div class="divider">
+        <span class="divider-line"></span>
+        <span class="divider-diamond"></span>
+        <span class="divider-line"></span>
+      </div>
+
+      <!-- Tagline -->
+      <div class="tagline">SCI-FI STAFF MANAGEMENT PORTAL • QUANTUM TELEMETRY</div>
+
+      <!-- CTA Button -->
+      <div class="cta-wrapper">
+        <div class="cta-glass" id="ctaGlass">
+          <button class="launch-btn" id="launchBtn" onclick="launchPortal()">
+            <span style="position:relative;z-index:2;letter-spacing:1.5px;">INITIALIZE QUANTUM PORTAL</span>
+            <span class="material-symbols-outlined" style="position:relative;z-index:2;">rocket_launch</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Info -->
+    <div class="bottom-info">
+      <div class="version-badge">v4.0.9 • STARDATE SYNCHRONIZED</div>
+      <div class="address-text">ORBITAL SECTOR 7 • SYSTEM STATUS: 99.9% WARP STABILITY</div>
+    </div>
+  </div>
+
+  <!-- ============ TRANSITION EFFECTS ============ -->
+  <div class="portal-blast" id="portalBlast">
+    <div class="portal-ring ring-1"></div>
+    <div class="portal-ring ring-2"></div>
+    <div class="portal-ring ring-3"></div>
+    <div class="portal-ring ring-4"></div>
+  </div>
+  <div class="portal-flash" id="portalFlash"></div>
+
+  <!-- ============ JAVASCRIPT ============ -->
+  <script>
+    // ======= WEBGL EMBER SHADER =======
+    (function() {
+      const canvas = document.getElementById('ember-canvas');
+      function syncSize() {
+        const w = canvas.clientWidth || 1280;
+        const h = canvas.clientHeight || 720;
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w; canvas.height = h;
+        }
+      }
+      if (typeof ResizeObserver !== 'undefined') new ResizeObserver(syncSize).observe(canvas);
+      syncSize();
+
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (!gl) return;
+
+      const vs = `attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+
+      const fs = `precision highp float;
+varying vec2 v_texCoord;
+uniform float u_time;
+uniform vec2 u_resolution;
+uniform vec2 u_mouse;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+void main() {
+  vec2 uv = v_texCoord;
+  vec2 center = vec2(0.5, 0.5);
+  vec3 color = vec3(0.012, 0.01, 0.008);
+
+  // Nebula-like background energy
+  float n1 = noise(uv * 3.0 + u_time * 0.15);
+  float n2 = noise(uv * 5.0 - u_time * 0.1);
+  float nebula = n1 * n2;
+  color += vec3(1.0, 0.42, 0.17) * nebula * 0.04;
+
+  // Central energy pulse
+  float centerDist = length(uv - center);
+  float pulse = sin(u_time * 1.5) * 0.5 + 0.5;
+  color += vec3(1.0, 0.42, 0.17) * 0.06 * pulse / (centerDist + 0.3);
+
+  // 40 floating embers with varied sizes and speeds
+  for(int i = 0; i < 40; i++) {
+    float fi = float(i);
+    float speed = 0.03 + hash(vec2(fi, 3.0)) * 0.06;
+    float wobble = sin(u_time * (0.3 + fi * 0.05) + fi) * 0.06;
+    vec2 pos = vec2(
+      hash(vec2(fi, 1.0)) + wobble,
+      fract(hash(vec2(fi, 2.0)) - u_time * speed)
+    );
+
+    float dist = length(uv - pos);
+    float size = 0.001 + hash(vec2(fi, 4.0)) * 0.002;
+    float brightness = hash(vec2(fi, 5.0)) * 0.5 + 0.3;
+    float glow = 0.003 / dist;
+
+    vec3 emberColor = mix(
+      vec3(1.0, 0.35, 0.12),
+      vec3(1.0, 0.7, 0.35),
+      hash(vec2(fi, 6.0))
+    );
+    color += emberColor * glow * smoothstep(size * 3.0, size, dist) * brightness * 0.4;
+  }
+
+  // Mouse interaction — glowing cursor trail
+  vec2 mouseUV = u_mouse / u_resolution;
+  float mouseDist = length(uv - mouseUV);
+  float mouseGlow = 0.02 / (mouseDist + 0.08);
+  color += vec3(1.0, 0.5, 0.2) * mouseGlow * 0.4;
+
+  // Subtle radial energy waves
+  float wave = sin(centerDist * 20.0 - u_time * 2.0) * 0.5 + 0.5;
+  color += vec3(1.0, 0.42, 0.17) * wave * 0.008 * smoothstep(0.5, 0.0, centerDist);
+
+  // Deep vignette
+  float vignette = 1.0 - pow(centerDist * 1.2, 1.5);
+  color *= max(vignette, 0.0);
+
+  gl_FragColor = vec4(color, 1.0);
+}`;
+
+      function cs(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          console.error(gl.getShaderInfoLog(s));
+        }
+        return s;
+      }
+
+      const prog = gl.createProgram();
+      gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+      gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+      gl.linkProgram(prog);
+      gl.useProgram(prog);
+
+      const buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+      const pos = gl.getAttribLocation(prog, 'a_position');
+      gl.enableVertexAttribArray(pos);
+      gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+      const uTime = gl.getUniformLocation(prog, 'u_time');
+      const uRes = gl.getUniformLocation(prog, 'u_resolution');
+      const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+      let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+      window.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width && rect.height) {
+          mouse.x = ((e.clientX - rect.left) / rect.width) * canvas.width;
+          mouse.y = (1.0 - (e.clientY - rect.top) / rect.height) * canvas.height;
+        }
+      });
+
+      function render(t) {
+        if (typeof ResizeObserver === 'undefined') syncSize();
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        if (uTime) gl.uniform1f(uTime, t * 0.001);
+        if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+        if (uMouse) gl.uniform2f(uMouse, mouse.x, mouse.y);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        requestAnimationFrame(render);
+      }
+      render(0);
+    })();
+
+    // ======= CSS EMBER PARTICLES (extra layer) =======
+    (function() {
+      const wrapper = document.getElementById('landingPage');
+      for (let i = 0; i < 15; i++) {
+        const ember = document.createElement('div');
+        ember.className = 'ember';
+        const size = 2 + Math.random() * 4;
+        const duration = 6 + Math.random() * 8;
+        const delay = Math.random() * 10;
+        const left = Math.random() * 100;
+        const drift = (Math.random() - 0.5) * 100;
+        ember.style.cssText = `
+          width: ${size}px; height: ${size}px;
+          left: ${left}%;
+          bottom: -10px;
+          background: radial-gradient(circle, rgba(255,107,43,${0.4 + Math.random() * 0.5}), transparent);
+          box-shadow: 0 0 ${size * 2}px rgba(255,107,43,0.3);
+          animation-duration: ${duration}s;
+          animation-delay: ${delay}s;
+          --drift: ${drift}px;
+        `;
+        wrapper.appendChild(ember);
+      }
+    })();
+
+    // ======= PARTICLE EXPLOSION =======
+    function createExplosion(x, y, count) {
+      const colors = ['#ff6b2b', '#ff8c52', '#ffb59a', '#ffdbce', '#fff', '#ff4400', '#ffb95f'];
+      for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'explosion-particle';
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.8;
+        const distance = 80 + Math.random() * 350;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        const size = 2 + Math.random() * 8;
+        const dur = 0.6 + Math.random() * 1;
+        particle.style.cssText = `
+          left: ${x}px; top: ${y}px;
+          width: ${size}px; height: ${size}px;
+          background: ${colors[Math.floor(Math.random() * colors.length)]};
+          box-shadow: 0 0 ${size}px ${colors[Math.floor(Math.random() * colors.length)]};
+          --tx: ${tx}px; --ty: ${ty}px;
+          --duration: ${dur}s;
+        `;
+        document.body.appendChild(particle);
+        setTimeout(() => particle.remove(), 2000);
+      }
+
+      // Also create trail particles
+      for (let i = 0; i < 15; i++) {
+        const trail = document.createElement('div');
+        trail.className = 'trail-particle';
+        const angle = (Math.PI * 2 * i) / 15 + (Math.random() - 0.5);
+        const distance = 100 + Math.random() * 250;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        const dur = 0.8 + Math.random() * 0.6;
+        const angleDeg = Math.atan2(ty, tx) * (180 / Math.PI);
+        trail.style.cssText = `
+          left: ${x}px; top: ${y}px;
+          height: ${8 + Math.random() * 15}px;
+          background: linear-gradient(to bottom, #ff6b2b, transparent);
+          --tx: ${tx}px; --ty: ${ty}px;
+          --duration: ${dur}s;
+          --angle: ${angleDeg}deg;
+        `;
+        document.body.appendChild(trail);
+        setTimeout(() => trail.remove(), 2000);
+      }
+    }
+
+    // ======= LAUNCH PORTAL =======
+    let isLaunching = false;
+    function launchPortal() {
+      if (isLaunching) return;
+      isLaunching = true;
+
+      const btn = document.getElementById('launchBtn');
+      const rect = btn.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      // Phase 1: Particle explosion (0ms)
+      createExplosion(cx, cy, 50);
+
+      // Phase 2: Screen shake (0ms)
+      document.body.classList.add('screen-shake');
+      setTimeout(() => document.body.classList.remove('screen-shake'), 600);
+
+      // Phase 3: Content dissolve-out (100ms)
+      setTimeout(() => {
+        document.getElementById('landingContent').classList.add('dissolving');
+      }, 100);
+
+      // Phase 4: Second wave explosion (250ms)
+      setTimeout(() => createExplosion(cx, cy, 30), 250);
+
+      // Phase 5: Portal blast rings (400ms)
+      setTimeout(() => {
+        document.getElementById('portalBlast').classList.add('active');
+      }, 400);
+
+      // Phase 6: Third explosion from center of screen (500ms)
+      setTimeout(() => {
+        createExplosion(window.innerWidth / 2, window.innerHeight / 2, 25);
+      }, 500);
+
+      // Phase 7: White flash (500ms — handled by CSS delay)
+      setTimeout(() => {
+        document.getElementById('portalFlash').classList.add('active');
+      }, 500);
+
+      // Phase 8: Fade out everything (900ms)
+      setTimeout(() => {
+        document.getElementById('landingPage').classList.add('hidden');
+      }, 900);
+
+      // Phase 9: Navigate to main app (1600ms)
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1600);
+    }
+
+    // ======= BUTTON HOVER SOUND EFFECT (visual) =======
+    const btn = document.getElementById('launchBtn');
+    const glass = document.getElementById('ctaGlass');
+    btn.addEventListener('mouseenter', () => {
+      glass.style.borderColor = 'rgba(255, 107, 43, 0.6)';
+      glass.style.boxShadow = '0 0 100px rgba(255,107,43,0.25), 0 0 200px rgba(255,107,43,0.08)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      glass.style.borderColor = '';
+      glass.style.boxShadow = '';
+    });
+  </script>
+
+</body>
+</html>

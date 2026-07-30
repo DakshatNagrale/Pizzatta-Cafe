@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PizzaCafe Staff Portal</title>
-  <meta name="description" content="Premium pizza cafe staff management system for billing, orders, menu management and sales analytics." />
+  <title>NEXUS-7 CYBER CAFÉ // Quantum Telemetry Command</title>
+  <meta name="description" content="Nexus-7 Cyber Cafe Sci-Fi Staff Telemetry Portal — Next-gen quantum pizza synthesis, real-time orbital order tracking, and plasma analytics." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Share+Tech+Mono&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-  <canvas id="spark-canvas" style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;opacity:0.4;"></canvas>
+  <canvas id="spark-canvas" style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;opacity:0.35;"></canvas>
   <div class="app-wrapper">
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
@@ -21,37 +21,58 @@
         <div class="brand-icon">🍕</div>
         <div class="brand-text">
           <span class="brand-name">PizzaCafe</span>
-          <span class="brand-sub">Staff Portal</span>
+          <span class="brand-sub">Staff Portal // Sci-Fi HUD</span>
         </div>
       </div>
 
       <nav class="sidebar-nav">
         <a href="#" class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
           <span class="nav-icon">📊</span>
-          <span class="nav-label">Dashboard</span>
+          <span class="nav-label">Command Deck</span>
         </a>
         <a href="#" class="nav-item" data-page="orders" onclick="navigate('orders')">
           <span class="nav-icon">🧾</span>
-          <span class="nav-label">Daily Orders</span>
+          <span class="nav-label">Sector Orders</span>
+        </a>
+        <a href="#" class="nav-item" data-page="kds" onclick="navigate('kds')">
+          <span class="nav-icon">🔥</span>
+          <span class="nav-label">Kitchen KDS</span>
         </a>
         <a href="#" class="nav-item" data-page="menu" onclick="navigate('menu')">
           <span class="nav-icon">🍽️</span>
-          <span class="nav-label">Menu Manager</span>
+          <span class="nav-label">Quantum Synthesizer</span>
         </a>
         <a href="#" class="nav-item" data-page="analytics" onclick="navigate('analytics')">
           <span class="nav-icon">📈</span>
-          <span class="nav-label">Sales Analytics</span>
+          <span class="nav-label">Plasma Telemetry</span>
         </a>
       </nav>
 
       <div class="sidebar-footer">
-        <div class="staff-avatar">S</div>
+        <div class="staff-avatar">NX</div>
         <div class="staff-info">
-          <span class="staff-name">Staff Login</span>
-          <span class="staff-role">Manager</span>
+          <span class="staff-name">CYBER OFFICER</span>
+          <span class="staff-role">COMMANDER</span>
+        </div>
+      </div>
+
+      <!-- THEME & SECURITY CONTROLS -->
+      <div class="sidebar-controls">
+        <div class="theme-swatches-row" title="Switch Cyber Theme Accent">
+          <span class="theme-swatch cyan active" onclick="setThemeAccent('cyan')" title="Quantum Cyan"></span>
+          <span class="theme-swatch magenta" onclick="setThemeAccent('magenta')" title="Plasma Magenta"></span>
+          <span class="theme-swatch emerald" onclick="setThemeAccent('emerald')" title="Laser Emerald"></span>
+          <span class="theme-swatch violet" onclick="setThemeAccent('violet')" title="Electric Violet"></span>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button class="btn-sidebar-ctrl" onclick="lockPortal()" title="Lock Portal with PIN">🔒 Lock</button>
+          <button class="btn-sidebar-ctrl" onclick="openEodReport()" title="End of Day Summary Report">📊 EOD</button>
         </div>
       </div>
     </aside>
+
+    <!-- SIDEBAR MOBILE OVERLAY -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
@@ -64,31 +85,134 @@
             <p class="page-date" id="pageDate"></p>
           </div>
         </div>
+
+        <!-- TELEMETRY HUD BAR -->
+        <div class="telemetry-bar" id="telemetryBar">
+          <div class="tele-item" title="Oven Thermal Core"><span class="tele-dot green"></span>OVEN: <strong>485°C</strong></div>
+          <div class="tele-item" title="Warp Network Stability"><span class="tele-dot cyan"></span>WARP: <strong>99.9%</strong></div>
+          <div class="tele-item" title="Delivery Drone Fleet"><span class="tele-dot magenta"></span>DRONES: <strong>8/10 ACTIVE</strong></div>
+        </div>
+
         <div class="topbar-right">
-          <div class="notification-bell">🔔</div>
+
+
+          <button class="audio-btn" id="audioToggleBtn" onclick="toggleCyberAudio()" title="Toggle Cyber Audio Synthesizer">
+            <span id="audioIcon">🔊</span> AUDIO
+          </button>
+          <button class="pos-quick-btn" onclick="openPosModal()" title="Open Instant POS Synthesizer">⚡ POS</button>
+          <div class="notification-bell" onclick="toggleNotificationDrawer()" title="View Notification Feed">
+            🔔<span class="notif-badge" id="notifBadge">0</span>
+          </div>
           <div class="today-badge" id="todayBadge"></div>
         </div>
       </header>
+
+      <!-- AI VOICE LISTENING STATUS BAR -->
+      <div class="ai-voice-status-bar" id="aiVoiceStatusBar">
+        <span class="ai-wave-dot"></span>
+        <span class="ai-voice-text" id="aiVoiceTranscript">LISTENING FOR AI VOICE COMMANDS... (e.g. "Add Margherita for Amit" / "Show KDS")</span>
+        <button class="ai-voice-close" onclick="stopAiVoice()">✕</button>
+      </div>
 
       <!-- PAGES -->
       <div class="page-container">
         <!-- DASHBOARD PAGE -->
         <div id="page-dashboard" class="page active">
           <div class="kpi-grid" id="kpiGrid"></div>
-          <div class="chart-row">
-            <div class="chart-card wide">
+
+          <!-- SECONDARY WIDGET ROW: Target Arc + Top Customers + Quick Search -->
+          <div class="widget-row">
+            <!-- Revenue Target Arc -->
+            <div class="chart-card widget-card target-widget-card">
               <div class="card-header">
-                <h3>Today's Hourly Sales</h3>
-                <span class="card-badge">Live</span>
+                <h3>🎯 Revenue Target</h3>
+                <span class="card-badge magenta">Daily Goal</span>
+              </div>
+              <div id="targetArcWidget" class="target-arc-widget"></div>
+            </div>
+
+            <!-- Top Customers mini leaderboard -->
+            <div class="chart-card widget-card leaderboard-widget-card">
+              <div class="card-header">
+                <h3>👑 Top Customers</h3>
+                <button class="card-badge" style="cursor:pointer;background:rgba(0,243,255,0.1);color:var(--primary);border:1px solid var(--border)" onclick="showLeaderboard()">View All →</button>
+              </div>
+              <div id="miniLeaderboard" class="mini-leaderboard"></div>
+            </div>
+
+            <!-- Quick Action Shortcuts -->
+            <div class="chart-card widget-card actions-widget-card">
+              <div class="card-header">
+                <h3>⚡ Quick Actions</h3>
+                <span class="card-badge">Hotkeys Active</span>
+              </div>
+              <div class="quick-actions-grid">
+                <button class="qa-btn" onclick="openNewOrderModal()"><span class="qa-icon">🧾</span><span class="qa-label">New Order</span><kbd>Ctrl+N</kbd></button>
+                <button class="qa-btn" onclick="openPosModal()"><span class="qa-icon">💻</span><span class="qa-label">Quick POS</span><kbd>Ctrl+P</kbd></button>
+                <button class="qa-btn" onclick="openGlobalSearch()"><span class="qa-icon">🔍</span><span class="qa-label">Search</span><kbd>Ctrl+K</kbd></button>
+                <button class="qa-btn" onclick="openModal('splitBillModal');calcSplit()"><span class="qa-icon">💳</span><span class="qa-label">Split Bill</span></button>
+                <button class="qa-btn" onclick="navigate('kds')"><span class="qa-icon">🔥</span><span class="qa-label">Kitchen KDS</span><kbd>Ctrl+3</kbd></button>
+                <button class="qa-btn" onclick="openModal('shortcutsModal')"><span class="qa-icon">⌨️</span><span class="qa-label">Shortcuts</span><kbd>Ctrl+/</kbd></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- CHART & AI FORECASTER ROW -->
+          <div class="chart-row">
+            <div class="chart-card wide60">
+              <div class="card-header">
+                <h3>Today's Hourly Sales Flow</h3>
+                <span class="card-badge">Live Stream</span>
               </div>
               <canvas id="hourlyChart" height="200"></canvas>
             </div>
+            <div class="chart-card wide40 ai-card">
+              <div class="card-header">
+                <h3>🤖 AI Demand Forecaster</h3>
+                <span class="card-badge magenta">Neural AI</span>
+              </div>
+              <div id="aiDemandContent" class="ai-demand-box">
+                <div class="ai-stat-row">
+                  <span class="ai-label">Predicted Peak Rush:</span>
+                  <span class="ai-val" id="aiPeakTime">8:30 PM - 9:45 PM</span>
+                </div>
+                <div class="ai-stat-row">
+                  <span class="ai-label">Highest Demand Item:</span>
+                  <span class="ai-val" id="aiTopItem">Paneer Cheese Pizza</span>
+                </div>
+                <div class="ai-stat-row">
+                  <span class="ai-label">Estimated Order Vol:</span>
+                  <span class="ai-val" id="aiEstVol">+42% Growth</span>
+                </div>
+                <div class="ai-forecast-bar">
+                  <div class="forecast-fill" style="width: 78%;"></div>
+                </div>
+                <button class="btn-ghost" style="margin-top:12px;width:100%;font-size:11px;" onclick="runAiDemandForecast()">✨ Recalculate AI Neural Model</button>
+              </div>
+            </div>
           </div>
+
           <div class="section-header">
             <h3>Recent Orders</h3>
             <a href="#" class="view-all" onclick="navigate('orders')">View All →</a>
           </div>
           <div class="table-card" id="recentOrdersTable"></div>
+        </div>
+
+        <!-- KITCHEN DISPLAY SYSTEM (KDS) PAGE -->
+        <div id="page-kds" class="page">
+          <div class="orders-topbar">
+            <div>
+              <h2 style="font-family:var(--font-display);font-size:18px;color:#fff;">🔥 KITCHEN DISPLAY SYSTEM (KDS)</h2>
+              <p style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Real-time thermal prep queue and live order status tickers</p>
+            </div>
+            <div class="kds-filter-tabs">
+              <button class="filter-tab active" onclick="filterKds('all', this)">All Orders</button>
+              <button class="filter-tab" onclick="filterKds('pending', this)">In Prep (Pending)</button>
+              <button class="filter-tab" onclick="filterKds('delivered', this)">Ready / Done</button>
+            </div>
+          </div>
+          <div class="kds-grid" id="kdsTicketGrid"></div>
         </div>
 
         <!-- ORDERS PAGE -->
@@ -219,9 +343,15 @@
         <button class="modal-close" onclick="closeModal('newOrderModal')">✕</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label>Customer Name</label>
-          <input type="text" id="customerName" class="form-input" placeholder="Enter customer name..." />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Customer Name</label>
+            <input type="text" id="customerName" class="form-input" placeholder="Enter customer name..." />
+          </div>
+          <div class="form-group">
+            <label>Customer Phone Number (Optional)</label>
+            <input type="tel" id="customerPhone" class="form-input" placeholder="e.g. 9876543210" />
+          </div>
         </div>
         <div class="form-group">
           <label>Search Menu Items</label>
@@ -231,16 +361,8 @@
         <div class="selected-items" id="selectedItems">
           <p class="empty-label">No items added yet</p>
         </div>
-        <div class="form-row">
-          <div class="form-group" style="margin-top:10px;">
-            <label>Order Type</label>
-            <select id="orderType" class="form-input">
-              <option value="dine-in">🍽️ Dine-in</option>
-              <option value="online">🛵 Online / Delivery</option>
-              <option value="takeaway">🛍️ Takeaway</option>
-            </select>
-          </div>
-        </div>
+
+
         <div class="form-group" style="margin-top:10px;">
           <label>Order Note (Optional)</label>
           <input type="text" id="orderNote" class="form-input" placeholder="e.g. Extra spicy, No onion..." />
@@ -332,9 +454,15 @@
       </div>
       <div class="modal-body">
         <input type="hidden" id="editOrderId" />
-        <div class="form-group">
-          <label>Customer Name</label>
-          <input type="text" id="editCustomerName" class="form-input" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Customer Name</label>
+            <input type="text" id="editCustomerName" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label>Customer Phone Number (Optional)</label>
+            <input type="tel" id="editCustomerPhone" class="form-input" placeholder="e.g. 9876543210" />
+          </div>
         </div>
         <div class="form-group">
           <label>Add More Items</label>
@@ -382,13 +510,413 @@
     </div>
   </div>
 
+  <!-- INSTANT POS SYNTHESIZER MODAL -->
+  <div class="modal-overlay pos-modal-overlay" id="posModal" onclick="closeModal('posModal')">
+    <div class="modal pos-modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>⚡ Instant POS Synthesizer</h3>
+        <button class="modal-close" onclick="closeModal('posModal')">✕</button>
+      </div>
+      <div class="pos-modal-body">
+        <!-- Left: Menu tiles -->
+        <div class="pos-left">
+          <div class="pos-search-bar">
+            <input class="form-input" type="text" placeholder="🔍 Filter items..." oninput="
+              const v = this.value.toLowerCase();
+              document.querySelectorAll('.pos-tile').forEach(t => {
+                t.style.display = t.textContent.toLowerCase().includes(v) ? '' : 'none';
+              });
+            " />
+          </div>
+          <div class="pos-menu-grid" id="posMenuGrid"></div>
+        </div>
+        <!-- Right: Bill -->
+        <div class="pos-right">
+          <div class="pos-bill-header">🧾 ORDER QUEUE</div>
+          <div class="pos-bill-list" id="posBillList"></div>
+          <div class="pos-bill-footer">
+            <div class="form-group" style="margin-bottom:6px">
+              <label style="font-size:11px;color:var(--text-muted)">Customer Name</label>
+              <input class="form-input" id="posCustomerName" placeholder="Walk-in Customer" style="height:32px"/>
+            </div>
+            <div class="form-group" style="margin-bottom:6px">
+              <label style="font-size:11px;color:var(--text-muted)">Customer Phone (Optional)</label>
+              <input class="form-input" id="posCustomerPhone" placeholder="e.g. 9876543210" style="height:32px"/>
+            </div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label style="font-size:11px;color:var(--text-muted)">Order Type</label>
+              <select class="form-input" id="posOrderType" style="height:32px">
+                <option value="dine-in">🍽️ Dine-in</option>
+                <option value="takeaway">🛍️ Takeaway</option>
+                <option value="online">🛵 Online</option>
+              </select>
+            </div>
+            <div class="pos-total-row">
+              <span>TOTAL</span>
+              <span id="posBillTotal">₹0</span>
+            </div>
+            <button class="btn-primary" style="width:100%;margin-top:10px;padding:14px;font-size:14px;letter-spacing:2px;" onclick="submitPosOrder()">
+              ⚡ SUBMIT ORDER
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST -->
   <div id="toast" class="toast"></div>
 
   <!-- AUTOSAVE INDICATOR -->
   <div id="saveIndicator" class="save-indicator">✓ Saved to database</div>
 
+  <!-- ===================== GLOBAL SEARCH OVERLAY ===================== -->
+  <div class="search-overlay" id="searchOverlay" onclick="closeGlobalSearch()">
+    <div class="search-box" onclick="event.stopPropagation()">
+      <div class="search-input-row">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="globalSearchInput" class="search-input" placeholder="Search orders, customers, menu items..." oninput="runGlobalSearch(this.value)" autocomplete="off" />
+        <kbd class="search-esc" onclick="closeGlobalSearch()">ESC</kbd>
+      </div>
+      <div class="search-results" id="searchResults">
+        <div class="search-hint">Type to search across all orders and menu items...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== KEYBOARD SHORTCUTS OVERLAY ===================== -->
+  <div class="modal-overlay" id="shortcutsModal" onclick="closeModal('shortcutsModal')">
+    <div class="modal shortcuts-modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>⌨️ Keyboard Shortcuts</h3>
+        <button class="modal-close" onclick="closeModal('shortcutsModal')">✕</button>
+      </div>
+      <div class="modal-body shortcuts-grid">
+        <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>K</kbd><span>Global Search</span></div>
+        <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>N</kbd><span>New Order</span></div>
+        <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>P</kbd><span>Quick POS</span></div>
+        <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>1</kbd><span>Dashboard</span></div>
+        <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>2</kbd><span>Orders</span></div>
+        <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>3</kbd><span>Kitchen KDS</span></div>
+        <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>4</kbd><span>Menu Manager</span></div>
+        <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>5</kbd><span>Analytics</span></div>
+        <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>T</kbd><span>Set Revenue Target</span></div>
+        <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>/</kbd><span>Show Shortcuts</span></div>
+        <div class="shortcut-item"><kbd>ESC</kbd><span>Close any modal</span></div>
+        <div class="shortcut-item"><kbd>Alt</kbd>+<kbd>A</kbd><span>Toggle Audio</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== REVENUE TARGET MODAL ===================== -->
+  <div class="modal-overlay" id="targetModal" onclick="closeModal('targetModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:420px">
+      <div class="modal-header">
+        <h3>🎯 Set Revenue Target</h3>
+        <button class="modal-close" onclick="closeModal('targetModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Set a daily revenue goal. A glowing progress arc on the dashboard will track your achievement.</p>
+        <div class="form-group">
+          <label>Daily Target (₹)</label>
+          <input type="number" id="targetInput" class="form-input" placeholder="e.g. 5000" min="100" step="100" />
+        </div>
+        <div class="target-presets">
+          <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">QUICK PRESETS:</span>
+          <button class="preset-btn" onclick="document.getElementById('targetInput').value=2000">₹2K</button>
+          <button class="preset-btn" onclick="document.getElementById('targetInput').value=3000">₹3K</button>
+          <button class="preset-btn" onclick="document.getElementById('targetInput').value=5000">₹5K</button>
+          <button class="preset-btn" onclick="document.getElementById('targetInput').value=8000">₹8K</button>
+          <button class="preset-btn" onclick="document.getElementById('targetInput').value=10000">₹10K</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal('targetModal')">Cancel</button>
+        <button class="btn-primary" onclick="saveRevenueTarget()">🎯 Set Target</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SPLIT BILL CALCULATOR ===================== -->
+  <div class="modal-overlay" id="splitBillModal" onclick="closeModal('splitBillModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+      <div class="modal-header">
+        <h3>💳 Split Bill Calculator</h3>
+        <button class="modal-close" onclick="closeModal('splitBillModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Total Bill Amount (₹)</label>
+          <input type="number" id="splitTotalInput" class="form-input" placeholder="0" oninput="calcSplit()" />
+        </div>
+        <div class="form-group">
+          <label>Number of People</label>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="pos-qty-btn" style="width:32px;height:32px;font-size:18px" onclick="changeSplitPeople(-1)">−</button>
+            <span id="splitPeopleCount" style="font-family:var(--font-mono);font-size:20px;color:var(--primary);min-width:30px;text-align:center">2</span>
+            <button class="pos-qty-btn" style="width:32px;height:32px;font-size:18px" onclick="changeSplitPeople(1)">+</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tip % (Optional)</label>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="preset-btn" onclick="setSplitTip(0)">No Tip</button>
+            <button class="preset-btn" onclick="setSplitTip(5)">5%</button>
+            <button class="preset-btn" onclick="setSplitTip(10)">10%</button>
+            <button class="preset-btn" onclick="setSplitTip(15)">15%</button>
+          </div>
+        </div>
+        <div class="split-result-box" id="splitResultBox">
+          <div class="split-result-row"><span>Bill Amount</span><span id="splitBillDisplay">₹0</span></div>
+          <div class="split-result-row"><span>Tip</span><span id="splitTipDisplay">₹0</span></div>
+          <div class="split-result-row split-total"><span>Total with Tip</span><span id="splitGrandTotal">₹0</span></div>
+          <div class="split-result-row split-per-person"><span>Per Person</span><span id="splitPerPerson">₹0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CUSTOMER LEADERBOARD MODAL ===================== -->
+  <div class="modal-overlay" id="leaderboardModal" onclick="closeModal('leaderboardModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:500px">
+      <div class="modal-header">
+        <h3>👑 Top Customers</h3>
+        <button class="modal-close" onclick="closeModal('leaderboardModal')">✕</button>
+      </div>
+      <div class="modal-body" id="leaderboardContent" style="padding:0"></div>
+    </div>
+  </div>
+
+  <!-- ===================== QUICK NOTES WIDGET (floating) ===================== -->
+  <div class="floating-notes" id="floatingNotes">
+    <div class="notes-header" onclick="toggleNotes()">
+      <span>📋 Staff Notes</span>
+      <span id="notesToggleIcon">▼</span>
+    </div>
+    <div class="notes-body" id="notesBody" style="display:none">
+      <textarea id="staffNotesArea" class="notes-textarea" placeholder="Write shift notes, reminders, announcements..."></textarea>
+      <div class="notes-footer">
+        <span id="notesTimestamp" style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono)"></span>
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="saveNotes()">💾 Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== LIVE TICKER BAR ===================== -->
+  <div class="ticker-bar" id="tickerBar">
+    <div class="ticker-track" id="tickerTrack">
+      <span class="ticker-label">📡 LIVE FEED</span>
+      <span class="ticker-sep">|</span>
+      <span id="tickerContent">LOADING TELEMETRY DATA...</span>
+    </div>
+  </div>
+
+  <!-- ===================== LIVE CLOCK WIDGET ===================== -->
+  <div class="clock-widget" id="clockWidget">
+    <div class="clock-time" id="clockTime">00:00:00</div>
+    <div class="clock-date" id="clockDateShort"></div>
+  </div>
+
+  <!-- ===================== QUICK ACTION WHEEL (FAB) ===================== -->
+  <div class="fab-container" id="fabContainer">
+    <button class="fab-main" onclick="toggleFab()" title="Quick Actions">⚡</button>
+    <div class="fab-actions" id="fabActions">
+      <button class="fab-action" onclick="openNewOrderModal();toggleFab()" title="New Order">🧾</button>
+      <button class="fab-action" onclick="openPosModal();toggleFab()" title="Quick POS">💻</button>
+      <button class="fab-action" onclick="openGlobalSearch();toggleFab()" title="Search">🔍</button>
+      <button class="fab-action" onclick="openModal('splitBillModal');toggleFab();calcSplit()" title="Split Bill">💳</button>
+      <button class="fab-action" onclick="showLeaderboard();toggleFab()" title="Top Customers">👑</button>
+      <button class="fab-action" onclick="openModal('targetModal');loadTargetInput();toggleFab()" title="Revenue Target">🎯</button>
+    </div>
+  </div>
+
+  <!-- ===================== NOTIFICATION DRAWER PANEL ===================== -->
+  <div class="notification-drawer" id="notificationDrawer">
+    <div class="notif-header">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span>🔔</span>
+        <span style="font-family:var(--font-display);font-size:14px;color:#fff;">NOTIFICATION FEED</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="preset-btn" style="font-size:10px" onclick="clearNotifications()">Clear All</button>
+        <button class="modal-close" onclick="toggleNotificationDrawer()">✕</button>
+      </div>
+    </div>
+    <div class="notif-feed-list" id="notifFeedList">
+      <div class="notif-empty">No new system alerts...</div>
+    </div>
+  </div>
+
+  <!-- ===================== PIN LOCK SECURITY OVERLAY ===================== -->
+  <div class="pin-lock-overlay" id="pinLockOverlay">
+    <div class="pin-lock-card">
+      <div class="pin-lock-header">
+        <div class="pin-lock-icon">🔒</div>
+        <h2>PORTAL LOCKED</h2>
+        <p>Enter 4-Digit Security PIN (Default: 1234)</p>
+      </div>
+      <div class="pin-dots" id="pinDots">
+        <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+      </div>
+      <div class="pin-numpad">
+        <button class="pin-num" onclick="pressPin('1')">1</button>
+        <button class="pin-num" onclick="pressPin('2')">2</button>
+        <button class="pin-num" onclick="pressPin('3')">3</button>
+        <button class="pin-num" onclick="pressPin('4')">4</button>
+        <button class="pin-num" onclick="pressPin('5')">5</button>
+        <button class="pin-num" onclick="pressPin('6')">6</button>
+        <button class="pin-num" onclick="pressPin('7')">7</button>
+        <button class="pin-num" onclick="pressPin('8')">8</button>
+        <button class="pin-num" onclick="pressPin('9')">9</button>
+        <button class="pin-num action" onclick="clearPin()">C</button>
+        <button class="pin-num" onclick="pressPin('0')">0</button>
+        <button class="pin-num action" onclick="backspacePin()">⌫</button>
+      </div>
+      <div id="pinErrorMsg" class="pin-error-msg"></div>
+    </div>
+  </div>
+
+  <!-- ===================== THERMAL RECEIPT MODAL ===================== -->
+  <div class="modal-overlay" id="thermalReceiptModal" onclick="closeModal('thermalReceiptModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:440px">
+      <div class="modal-header">
+        <h3>🧾 Thermal Bill Preview</h3>
+        <button class="modal-close" onclick="closeModal('thermalReceiptModal')">✕</button>
+      </div>
+      <div class="modal-body" style="padding:0">
+        <div class="thermal-receipt-paper" id="thermalPaperContent"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal('thermalReceiptModal')">Close</button>
+        <button class="btn-primary" onclick="printThermalReceipt()">🖨️ Print Receipt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== DISCOUNT APPLIER MODAL ===================== -->
+  <div class="modal-overlay" id="discountModal" onclick="closeModal('discountModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+      <div class="modal-header">
+        <h3>🏷️ Apply Discount</h3>
+        <button class="modal-close" onclick="closeModal('discountModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="discountOrderId" />
+        <div style="font-family:var(--font-mono);font-size:13px;color:var(--primary);margin-bottom:12px;" id="discountOrderInfo">Order #000</div>
+        <div class="form-group">
+          <label>Discount Type</label>
+          <div style="display:flex;gap:10px;">
+            <button class="filter-tab active" id="discTypePctBtn" onclick="setDiscountType('percent')">% Percentage</button>
+            <button class="filter-tab" id="discTypeFlatBtn" onclick="setDiscountType('flat')">₹ Flat Amount</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+          <label>Value</label>
+          <input type="number" id="discountValInput" class="form-input" placeholder="e.g. 10 or 50" oninput="calcDiscountPreview()" />
+        </div>
+        <div class="target-presets" style="margin-top:8px;">
+          <button class="preset-btn" onclick="setDiscPreset(5)">5%</button>
+          <button class="preset-btn" onclick="setDiscPreset(10)">10%</button>
+          <button class="preset-btn" onclick="setDiscPreset(15)">15%</button>
+          <button class="preset-btn" onclick="setDiscPreset(20)">20%</button>
+          <button class="preset-btn" onclick="setDiscPreset(50)">50%</button>
+        </div>
+        <div class="split-result-box" style="margin-top:16px;">
+          <div class="split-result-row"><span>Original Total</span><span id="discOrigTotal">₹0</span></div>
+          <div class="split-result-row"><span>Discount Savings</span><span id="discSavingsAmount" style="color:var(--success)">-₹0</span></div>
+          <div class="split-result-row split-total"><span>Final Payable</span><span id="discFinalTotal">₹0</span></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal('discountModal')">Cancel</button>
+        <button class="btn-primary" onclick="applyDiscountToOrder()">🏷️ Save Discount</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== END OF DAY (EOD) REPORT MODAL ===================== -->
+  <div class="modal-overlay" id="eodModal" onclick="closeModal('eodModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:540px">
+      <div class="modal-header">
+        <h3>📊 End of Day (EOD) Summary</h3>
+        <button class="modal-close" onclick="closeModal('eodModal')">✕</button>
+      </div>
+      <div class="modal-body" id="eodReportBody"></div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal('eodModal')">Close</button>
+        <button class="btn-primary" onclick="downloadEodReport()">⬇️ Download EOD Summary</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== AI NATURAL LANGUAGE ORDER PARSER MODAL ===================== -->
+  <div class="modal-overlay" id="aiParserModal" onclick="closeModal('aiParserModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:560px">
+      <div class="modal-header">
+        <h3>✨ AI Natural Language Order Parser</h3>
+        <button class="modal-close" onclick="closeModal('aiParserModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+          Type or speak plain English / Hindi sentence (e.g. <em>"2 paneer cheese pizza and 1 choco lava cake for Rahul note extra spicy"</em>)
+        </p>
+        <div class="form-group">
+          <textarea id="aiParserInput" class="form-input" rows="3" placeholder="Type plain order command here..." oninput="parseAiOrderText()"></textarea>
+        </div>
+        <div class="target-presets" style="margin-bottom:12px">
+          <span style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono)">EXAMPLES:</span>
+          <button class="preset-btn" onclick="setAiParserExample('2 Margherita (Regular) and 1 Thumbs Up for Amit')">Ex 1: Margherita & Coke</button>
+          <button class="preset-btn" onclick="setAiParserExample('1 Paneer Cheese Pizza and 2 Veg Momos for Priya note extra spicy')">Ex 2: Paneer & Momos</button>
+          <button class="preset-btn" onclick="setAiParserExample('3 Farmhouse Pizza (Medium) and 2 Choco Lava Cake for Cafe Team')">Ex 3: Bulk Office Order</button>
+        </div>
+        <div class="ai-parsed-preview-box" id="aiParsedPreview">
+          <div class="ai-parsed-empty">Start typing above to see AI live parsing...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal('aiParserModal')">Cancel</button>
+        <button class="btn-primary" id="btnSubmitAiOrder" onclick="submitAiParsedOrder()" disabled>⚡ CONFIRM PARSED ORDER</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== BATCH ACTION FLOATING TOOLBAR ===================== -->
+  <div class="batch-action-bar" id="batchActionBar">
+    <div class="batch-info"><span id="batchCountBadge">0</span> Orders Selected</div>
+    <div class="batch-btns">
+      <button class="btn-batch success" onclick="batchMarkPaid()">✓ Mark Paid</button>
+      <button class="btn-batch primary" onclick="batchMarkDelivered()">🛵 Mark Delivered</button>
+      <button class="btn-batch danger" onclick="batchDeleteOrders()">🗑️ Delete Selected</button>
+      <button class="btn-batch ghost" onclick="clearBatchSelection()">✕ Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===================== MOBILE BOTTOM NAVIGATION BAR ===================== -->
+  <nav class="mobile-bottom-nav">
+    <button class="mb-nav-item active" data-mobile-page="dashboard" onclick="navigate('dashboard')">
+      <span class="mb-nav-icon">📊</span>
+      <span class="mb-nav-label">Deck</span>
+    </button>
+    <button class="mb-nav-item" data-mobile-page="orders" onclick="navigate('orders')">
+      <span class="mb-nav-icon">🧾</span>
+      <span class="mb-nav-label">Orders</span>
+    </button>
+    <button class="mb-nav-item" data-mobile-page="kds" onclick="navigate('kds')">
+      <span class="mb-nav-icon">🔥</span>
+      <span class="mb-nav-label">KDS</span>
+    </button>
+    <button class="mb-nav-item" data-mobile-page="menu" onclick="navigate('menu')">
+      <span class="mb-nav-icon">🍕</span>
+      <span class="mb-nav-label">Menu</span>
+    </button>
+    <button class="mb-nav-item" onclick="openPosModal()">
+      <span class="mb-nav-icon">⚡</span>
+      <span class="mb-nav-label">POS</span>
+    </button>
+  </nav>
+
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
+

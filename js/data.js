@@ -2,7 +2,7 @@
 // DATA STORE — PizzaCafe Staff Portal
 // =============================================
 
-// MENU ITEMS
+/// MENU ITEMS
 let menuItems = [
   // 🍕 Special Pizzas — Regular
   { id:  1, name: 'Margherita (Regular)',         category: 'special', price: 109, desc: 'Special pizza — Regular size', available: true },
@@ -74,7 +74,7 @@ let menuItems = [
 
   // 🧀 Extra Cheese
   { id: 50, name: 'Extra Cheese (Regular)',       category: 'extra',   price:  30, desc: 'Add extra cheese — Regular size', available: true },
-  { id: 51, name: 'Extra Cheese (Medium)',        category: 'extra',   price:  50, desc: 'Add extra cheese — Medium size', available: true },
+  { id: 51, name: 'Extra Cheese (Medium)',        category: 'extra',   price:  50, desc: 'Add extra cheese — Medium size', available: true }
 ];
 
 function getTodayISTData() {
